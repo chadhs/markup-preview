@@ -22,10 +22,13 @@ async function visit(name, from = process.cwd()) {
   else {
     const readme = files.find((file) => /^readme\.md$/i.test(file));
     const text = readme ? await readFile(path.join(directory, readme), 'utf8') : '';
-    licenseText = text.match(/^## License\s*\n([\s\S]*?)(?=^## |$(?![\s\S]))/m)?.[1]?.trim();
+    licenseText = text.match(/^(?:## License|License\r?\n=+)\s*\n([\s\S]*?)(?=^## |$(?![\s\S]))/m)?.[1]?.trim();
     if (!licenseText || !/Copyright/i.test(licenseText)) throw new Error(`Missing license text for ${name}`);
   }
-  output += `\n* ${name} ${pkg.version}\nLicense: ${pkg.license}\n\n#+begin_example\n${licenseText}\n#+end_example\n`;
+  // format 0.2.2 ships its copyright and MIT URL, but omits the permission text.
+  if (name === 'format' && pkg.version === '0.2.2') licenseText += '\n\n' + await readFile(new URL('licenses/MIT-permission.txt', import.meta.url), 'utf8');
+  const licenseName = pkg.license || pkg.licenses?.map((license) => license.type).join(' OR ');
+  output += `\n* ${name} ${pkg.version}\nLicense: ${licenseName}\n\n#+begin_example\n${licenseText}\n#+end_example\n`;
   for (const dependency of Object.keys(pkg.dependencies || {})) await visit(dependency, directory);
 }
 const pkg = JSON.parse(await readFile('package.json', 'utf8'));

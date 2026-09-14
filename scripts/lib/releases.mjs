@@ -95,7 +95,7 @@ export function releaseNotes({ version, repository, source, changes = '' }) {
   return [
     'Markup Preview is a live reader for local Org-mode and Markdown files. Keep writing in your editor and the preview follows your saves. Downloaded releases need no Node.js, npm, or Emacs.',
     '',
-    'Includes document tabs, offline Mermaid diagrams, local images, an outline, search, source view, themes, zoom, and Org and GitHub-style Markdown formatting. Local document links open in tabs, including heading targets. Documents stay local; embedded HTML and Babel blocks never execute. BSD-3-Clause, with the MIT-licensed Orga parser.',
+    'Includes document tabs, offline Mermaid diagrams, local images, an outline, search, source view, themes, zoom, and Org and GitHub-style Markdown formatting. Local document links open in tabs, including heading targets. Hugo metadata displays from Org headers and Markdown YAML/TOML front matter, with a Draft badge only when true. Documents stay local; embedded HTML and Babel blocks never execute. BSD-3-Clause, with the MIT-licensed Orga parser.',
     '',
     'Markup Preview v0.7.0 replaces the Org Preview name and keeps its original icon. This is a fresh application identity with default preferences. Remove the old app or Linux launcher manually after installing; existing settings are not migrated.',
     '',
@@ -129,7 +129,7 @@ export function releaseNotes({ version, repository, source, changes = '' }) {
     '',
     '### Known limits',
     '',
-    'Up to 20 UTF-8 documents, 16 MiB per file and 64 MiB of source files total. Tabs do not persist after quitting. Mermaid rendering has input, output, and time limits; document configuration and remote assets are unsupported. Editing, full Emacs export parity, unsupported local file types, frontmatter metadata, math, other diagram engines, Babel, Quick Look, Developer ID signing/notarization, and auto-updates remain outside scope. Intel Mac builds are not supplied.',
+    'Up to 20 UTF-8 documents, 16 MiB per file and 64 MiB of source files total. Tabs do not persist after quitting. Mermaid rendering has input, output, and time limits; document configuration and remote assets are unsupported. Editing, full Emacs export parity, unsupported local file types, math, other diagram engines, Babel, Quick Look, Developer ID signing/notarization, and auto-updates remain outside scope. Intel Mac builds are not supplied.',
     '',
     `[Release information](https://github.com/${repository}/blob/v${version}/RELEASE-NOTES.org) · [Merged source](https://github.com/${repository}/commit/${source})`,
     '',

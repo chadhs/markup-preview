@@ -3,7 +3,10 @@ import { parse } from 'orga';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { gfm } from 'micromark-extension-gfm';
 import { gfmFromMarkdown } from 'mdast-util-gfm';
+import { frontmatter } from 'micromark-extension-frontmatter';
+import { frontmatterFromMarkdown } from 'mdast-util-frontmatter';
 import { orgImageTarget } from '../electron/org-image-links.mjs';
+import { orgMetadata, markdownMetadata } from './metadata.js';
 const { MAX_IMAGE_LINKS } = formats;
 
 export const plainText = (node) => node.value ?? node.alt ?? (node.children || []).map(plainText).join('');
@@ -20,8 +23,9 @@ export const localLinkUrl = (url) => typeof url === 'string' && url.length <= 81
 // No DOM or highlighting dependencies: this module is also bundled for Electron.
 export function analyzeDocument({ source, format }) {
   if (!['org', 'markdown'].includes(format)) throw new Error('Unsupported document format.');
-  const tree = format === 'org' ? parse(source)
-    : fromMarkdown(source, { extensions: [gfm()], mdastExtensions: [gfmFromMarkdown()] });
+  const org = format === 'org' ? orgMetadata(source) : null;
+  const tree = format === 'org' ? parse(org.source)
+    : fromMarkdown(source, { extensions: [gfm(), frontmatter(['yaml', 'toml'])], mdastExtensions: [gfmFromMarkdown(), frontmatterFromMarkdown(['yaml', 'toml'])] });
   const images = [], diagrams = [], links = [];
   const definitions = new Map(), nodes = new WeakMap();
   function visit(node, callback) { callback(node); for (const child of node.children || []) visit(child, callback); }
@@ -70,5 +74,5 @@ export function analyzeDocument({ source, format }) {
     }
     nodes.set(node, indexed);
   });
-  return { tree, images, diagrams, links, definitions, nodes };
+  return { tree, images, diagrams, links, definitions, nodes, metadata: org?.metadata ?? markdownMetadata(tree) };
 }

@@ -153,6 +153,9 @@ export function renderOrg(source, fallbackTitle = 'Untitled') {
     title: String(tree.properties.title || fallbackTitle),
     subtitle: String(tree.properties.subtitle || ''),
     author: String(tree.properties.author || ''),
+    date: analysis.metadata.date || String(tree.properties.date || ''),
+    tags: analysis.metadata.tags,
+    draft: analysis.metadata.draft,
     words: source.trim() ? source.trim().split(/\s+/).length : 0,
     lines: source.split('\n').length,
   };

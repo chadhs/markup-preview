@@ -1,6 +1,9 @@
 #+title: Your words, in Org.
 #+subtitle: A quiet place to read what you've been writing.
 #+author: The markup-preview notebook
+#+date: 2026-09-13
+#+tags[]: org-mode notes
+#+draft: false
 
 * Make yourself at home
 :PROPERTIES:

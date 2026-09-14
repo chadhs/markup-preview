@@ -9,6 +9,7 @@ import { checkAppearance, setAppearance, captureAppearances } from './lib/appear
 import { checkOrgHighlighting } from './lib/org-highlight-smoke.mjs';
 import { checkTabsAndOrgDiagrams } from './lib/tabs-org-diagrams-smoke.mjs';
 import { checkMarkdown } from './lib/markdown-smoke.mjs';
+import { checkHugoMetadata } from './lib/hugo-smoke.mjs';
 import { checkOrgImages } from './lib/org-images-smoke.mjs';
 
 const directory = await mkdtemp(path.join(tmpdir(), 'markup-preview-smoke-'));
@@ -159,6 +160,7 @@ try {
   await checkOrgImages(window, directory, executablePath ? 'packaged' : 'desktop');
   await checkTabsAndOrgDiagrams(app, window, directory, executablePath ? 'packaged' : 'desktop');
   await checkMarkdown(app, window, directory, executablePath ? 'packaged' : 'desktop', appArgs, profileArg, env);
+  await checkHugoMetadata(window, directory, executablePath ? 'packaged' : 'desktop');
   // Exercise the same picker path used by the Open button without a native dialog.
   await app.evaluate(({ dialog }, welcome) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [welcome] }); }, path.resolve('examples/welcome.org'));
   await window.locator('#open').click();

@@ -13,6 +13,8 @@ and checksums. Pull requests do not publish releases.
   search, read-only source view, themes, and live updates.
 - Render GitHub-style Markdown tables, tasks, strikethrough, autolinks,
   reference links, footnotes, highlighted code, local images, and Mermaid fences.
+- Preview Hugo title, author, date, tags, and draft metadata from Org headers
+  or Markdown YAML/TOML front matter. Show a Draft badge only when true.
 - Follow links between Org and Markdown documents, including heading and
   custom-ID targets. Reuse existing tabs and report unavailable destinations.
 - Use a fresh app identity and default appearance settings. Existing Org

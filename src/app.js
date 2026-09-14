@@ -7,6 +7,7 @@ import { initializeAppearance } from './appearance.js';
 import { loadImages } from './images.js';
 import { loadDiagrams } from './diagrams.js';
 import { tabLabel } from './tabs.js';
+import { showMetadata } from './metadata.js';
 
 document.documentElement.dataset.platform = window.markupPreview.platform;
 initializeAppearance();
@@ -192,7 +193,7 @@ async function acceptDocument(doc) {
     $('#document-title').textContent = parsed.title;
     $('#subtitle').textContent = parsed.subtitle;
     $('#subtitle').hidden = !parsed.subtitle;
-    $('#metadata').textContent = [parsed.author, `${Math.max(1, Math.ceil(parsed.words / 220))} min read`].filter(Boolean).join('  ·  ');
+    showMetadata($('#metadata'), parsed);
     $('#content').innerHTML = DOMPurify.sanitize(parsed.html, { USE_PROFILES: { html: true }, FORBID_TAGS: ['style', 'img', 'video', 'audio', 'iframe', 'form'], FORBID_ATTR: ['style'] });
     $('#source').textContent = doc.source;
     activeDiagrams = parsed.diagrams;

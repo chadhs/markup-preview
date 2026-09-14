@@ -38,8 +38,7 @@ The promoted title remains in the outline and can be linked to.
 Fenced code uses the existing offline syntax highlighter. Backtick and tilde
 =mermaid= fences render diagrams, including fences inside lists and quotes.
 Inline and reference-style local images retain their alt text. Remote images
-remain links; embedded HTML displays as escaped text. Frontmatter metadata,
-math, MDX, and wiki-link syntax are not supported.
+remain links; embedded HTML displays as escaped text. Math, MDX, and wiki-link syntax are not supported.
 
 Links between local Org and Markdown documents open in tabs. Relative paths
 resolve from the source file's folder; absolute paths, =~/= paths, and local
@@ -55,6 +54,33 @@ an explanation. Other local file types and custom protocols are not opened.
 There is no editing, execution, or automatic navigation when a document loads.
 
 Try [[file:examples/welcome.org][the Org notebook]] and [[file:examples/welcome.md][the Markdown notebook]].
+
+* Hugo posts and pages
+Hugo metadata appears beneath the document title: author, date, and tags.
+A *Draft* badge appears only when =draft= is =true=. False or missing draft
+values show no badge. Metadata updates when you save the file, and source
+view always preserves the original file.
+
+Org files support the header format below, including Hugo's array keywords:
+
+#+begin_example
+#+title: Omarchy Quattro and the Year of the Linux Desktop
+#+author: Chad Stovern
+#+date: 2026-09-11
+#+tags[]: linux omarchy
+#+draft: false
+#+end_example
+
+Markdown supports YAML front matter between =---= delimiters and TOML front
+matter between =+++= delimiters. Use =title=, =author= or =params.author=,
+=date=, =tags= as an array, and the boolean =draft=. Front matter supplies the
+page title; a different leading Markdown H1 stays in the body. An identical
+leading H1 is shown only once. Dates display without timezone conversion.
+
+Valid front matter stays out of the preview body. Invalid front matter
+shows a warning and its escaped source while the rest of the document stays
+readable. YAML aliases and custom tags are not expanded. This previews the
+content file; it does not execute Hugo templates, shortcodes, or site builds.
 
 * Compact window toolbar
 Window controls and reading actions share one compact title bar. The title
@@ -116,7 +142,8 @@ supports that limit, 4 MiB of generated SVG per diagram, and five seconds per
 render request. Layout runs in a separate sandboxed renderer so a slow diagram
 can be stopped without freezing the reader.
 
-Mermaid configuration directives and YAML frontmatter are not supported.
+Mermaid configuration directives and Mermaid's own YAML frontmatter are not
+supported. Hugo document front matter is supported separately.
 HTML labels, diagram links, callbacks, and external resources are disabled.
 Babel headers such as =:file= never write files or run commands. Generate
 Graphviz, PlantUML, or ditaa images in your editor and use local image links

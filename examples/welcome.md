@@ -1,3 +1,11 @@
+---
+title: Your words, in Markdown.
+author: The markup-preview notebook
+date: 2026-09-13
+tags: [markdown, notes]
+draft: false
+---
+
 # Your words, in Markdown.
 
 Keep writing in your editor. **Markup Preview** follows along when you save.

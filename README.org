@@ -3,27 +3,175 @@
 
 [[file:build/icons/128x128.png]]
 
-Markup Preview is a live reader for local =.org=, =.md=, and =.markdown= files
-on macOS and Linux.
-Keep writing in your editor; previews update when you save.
-
-- *Document tabs* keep several notebooks open, with separate search, scroll
-  positions, and live updates for each file.
-- *Mermaid diagrams* render directly from Org source blocks and Markdown fences, entirely offline,
-  with a Show source disclosure and support for the selected theme.
+Markup Preview is a standalone previewer for Org-mode files on macOS and Linux.
+It also supports Markdown. Keep writing in your editor; read your notes here,
+follow their outline, and see the preview update when you save.
+No Emacs installation, account, or cloud service is needed. Your files stay local.
 
 [[#install][Install on macOS or Omarchy]]
 
 * Screenshots
-v0.7.0 in Default Light: Markdown, Org document tabs, and the original icon.
+An Org notebook in Default Light, with outline navigation and document search.
+
+[[file:docs/screenshots/preview-org-light.png]]
+
+* Everyday reading
+Open local UTF-8 =.org=, =.md=, and =.markdown= files. Keep the same file open in your
+editor and save changes to update the preview. Click a heading in the outline
+to jump through the document. Previewing never modifies your files.
+
+Open files with the toolbar, drag and drop, or =Cmd/Ctrl+O=. The app polls
+open files every 300 ms and keeps watching after atomic saves or deletion
+and recreation. Large documents can take longer to render, depending on
+their structure. File and tab limits are described under Document tabs.
+
+Use =Cmd/Ctrl+F= to search. Enter advances to the next match and Shift+Enter
+moves back. Search stays inside the current document view and shows up to
+1,000 matches. =Cmd/Ctrl+Shift+S= switches between preview and read-only source.
+Use =Cmd/Ctrl++= and =Cmd/Ctrl+-= to zoom. Click the file card to reveal the
+file in Finder or your file manager.
+
+* Appearance
+Open *Appearance* in the toolbar to choose *System*, *Light*, or *Dark* mode.
+Choose a light theme and a dark theme independently:
+
+- *Default Light* and *Default Dark* keep Markup Preview's original colors.
+- *Solarized Light* and *Solarized Dark* use the [[https://ethanschoonover.com/solarized/][Solarized palette]].
+
+System switches between your preferred themes when your device changes
+appearance. Light and Dark stay in the selected mode. Both theme preferences
+remain editable in every mode, and changes save immediately for the next launch.
+Existing installations keep their mode and use the default theme pair.
+
+Enable *Sans-serif headings* to use the app's sans-serif font for the document
+title and headings. This preference applies to every theme and saves immediately.
+It starts off, preserving the original heading fonts.
+
+Window controls and reading actions share one compact title bar. The title
+bar and document tabs follow the selected theme, including the background
+behind the native window buttons. Drag unused toolbar space to move the window.
+The tabs keep a full-width row beneath it.
+
+The icon and version badge sit beside the app name. On Linux, Electron's
+window-controls overlay reserves space for the native buttons.
+
+* Document tabs
+Open several files with the file picker, drag and drop, or command-line paths.
+Each document opens in its own tab. Opening the same file again selects its
+existing tab. Files with the same name show their parent folders in the tabs.
+
+Tabs remember your search, selected match, preview/source mode, and scroll
+position in each view. Every open file stays watched. Background saves update
+that document without switching tabs; its preview renders when you select it.
+A missing file keeps its last readable content and shows an error on its tab
+until it returns.
+
+Use =Ctrl+Tab= and =Ctrl+Shift+Tab= to switch tabs on either platform.
+=Cmd+W= on macOS or =Ctrl+W= on Linux closes the active tab. Add Shift to close
+the window. Arrow keys, Home, and End navigate a focused tab strip. Closing the
+last tab leaves an Open action. Tabs are not restored after quitting.
+
+Up to 20 documents can be open, with a 16 MiB limit per file and 64 MiB of
+source files in total. Close a tab to free its watcher and retained content.
+Only the active document retains an image cache and mounted preview.
+
+* Syntax highlighting
+Preview source blocks use their declared language, such as =#+begin_src python=.
+Highlighting works offline and follows the selected color theme.
+
+Bundled languages include Bash, C, C++, CSS, diff, Go, INI/TOML, Java,
+JavaScript, JSON, Lisp, Lua, Markdown, Nix, Python, Ruby, Rust, SQL,
+TypeScript, XML/HTML, and YAML. Common aliases such as =js=, =ts=, =sh=,
+and =yml= work too. =emacs-lisp= and =elisp= use the generic Lisp grammar.
+
+Unknown or missing languages, example/export blocks, and inline code stay
+plain text. Blocks over 50,000 characters stay plain text, with a total
+highlighting budget of 200,000 characters per document to limit rendering work.
+Mermaid blocks use the diagram renderer described below. The read-only
+source view stays plain text. Babel code never executes.
+
+* Mermaid diagrams
+Org source blocks rendered in Solarized Dark, with document tabs and diagram
+source visible.
+
+[[file:docs/screenshots/preview-org-diagrams.png]]
+
+Mermaid source blocks render as diagrams automatically when you open or save
+an Org or Markdown file. The renderer is bundled locally; no Emacs, CLI tool, or network
+connection is required. Flowcharts and sequence diagrams are covered by the
+app's desktop checks. Other diagram types in the bundled Mermaid library can
+render, subject to the same limits and offline asset restrictions.
+
+#+begin_src mermaid
+flowchart LR
+  Draft --> Review
+  Review -->|Approved| Publish
+  Review -->|Changes| Draft
+#+end_src
+
+Diagrams follow the active appearance theme. Use *Show source* below a diagram
+to read or search its text. Source view always shows the original document.
+Invalid diagrams show their source and an explanation without interrupting the
+rest of the preview.
+
+An immediately following =#+RESULTS:= with one local image link is hidden after
+successful diagram rendering, so an existing Babel image does not appear twice.
+Named blocks require matching result names. If rendering fails, the generated
+image remains visible. Unrelated and ambiguous results remain unchanged.
+
+Rendering is limited to 20 diagrams per document, 20,000 characters per block,
+100,000 diagram characters per document, 200 edges where the diagram type
+supports that limit, 4 MiB of generated SVG per diagram, and five seconds per
+render request. Layout runs in a separate sandboxed renderer so a slow diagram
+can be stopped without freezing the reader.
+
+Mermaid configuration directives and Mermaid's own YAML frontmatter are not
+supported. Hugo document front matter is supported separately.
+HTML labels, diagram links, callbacks, and external resources are disabled.
+Babel headers such as =:file= never write files or run commands. Generate
+Graphviz, PlantUML, or ditaa images in your editor and use local image links
+for those formats.
+
+* Local images
+Image links without descriptions display inline, for example
+=[[file:images/chart.png]]= or =[[./photo.jpg]]=.
+PNG, JPEG, GIF, WebP, and SVG files are supported. Relative paths resolve
+from the document's folder; absolute paths and =~/= paths also work.
+Images fit the reading column without being stretched beyond their size.
+
+Missing, unreadable, or invalid images show a placeholder while the document
+remains readable. Images reload when you save the document or close and reopen its tab.
+Image-only changes are not watched separately. Web images remain links,
+and Org links with descriptions remain text, following Org's inline-image convention.
+Markdown image descriptions provide alt text.
+
+Previews are limited to 100 image links, 8 MiB per image, and 32 MiB of unique
+image data per document. SVGs display in an image context, without executing
+scripts or loading external resources. Embedded HTML remains inert.
+
+* Org rendering
+- Document title, subtitle, author, headings, and outline navigation.
+- TODO and DONE states, priorities, tags, planning lines, and folded drawers.
+- Bold, italic, underline, strike-through, code, and verbatim text.
+- Ordered and unordered lists, nested lists, and read-only checkboxes.
+- Tables, source/example blocks, quotes, and HTTP/HTTPS/mailto links.
+- Internal heading links and =CUSTOM_ID= links for common cases.
+
+The preview uses Orga's syntax tree and an explicit HTML renderer. It is not
+Emacs's exporter. Custom TODO workflows, footnotes, inline math, timestamps,
+macros, export options, and complex Org constructs may display literally or
+incompletely. Source view always shows the original file.
+
+Local image links display inline. Links to supported local documents open in tabs.
+Raw export blocks display as text. Babel, includes, embedded HTML, and
+custom URL handlers never execute. Documents cannot fetch network resources.
+Clicking a web link opens your browser. No telemetry or cloud services.
+
+* Markdown support
+Markdown notebooks share the same reading interface as Org files.
 
 [[file:docs/screenshots/preview-light.png]]
 
-v0.7.0 in Solarized Dark: Markdown code and an offline Mermaid flowchart.
-
-[[file:docs/screenshots/preview-dark.png]]
-
-* Markdown and local document links
 Open =.md= or =.markdown= files through the same picker, tabs, drag and drop,
 command-line paths, and Open With actions as Org files. Extensions are
 case-insensitive. Preview, source view, search, themes, outline navigation,
@@ -40,6 +188,7 @@ Fenced code uses the existing offline syntax highlighter. Backtick and tilde
 Inline and reference-style local images retain their alt text. Remote images
 remain links; embedded HTML displays as escaped text. Math, MDX, and wiki-link syntax are not supported.
 
+* Local document links
 Links between local Org and Markdown documents open in tabs. Relative paths
 resolve from the source file's folder; absolute paths, =~/= paths, and local
 =file:= URLs also work. An already-open destination reuses its tab.
@@ -81,121 +230,6 @@ Valid front matter stays out of the preview body. Invalid front matter
 shows a warning and its escaped source while the rest of the document stays
 readable. YAML aliases and custom tags are not expanded. This previews the
 content file; it does not execute Hugo templates, shortcodes, or site builds.
-
-* Compact window toolbar
-Window controls and reading actions share one compact title bar. The title
-bar and document tabs follow the selected theme, including the background
-behind the native window buttons. Drag unused toolbar space to move the window.
-The tabs keep a full-width row beneath it.
-
-The icon and version badge sit beside the app name. Open *Appearance* to
-choose theme preferences. On Linux,
-Electron's window-controls overlay reserves space for the native buttons.
-
-* Document tabs
-Open several files with the file picker, drag and drop, or command-line paths.
-Each document opens in its own tab. Opening the same file again selects its
-existing tab. Files with the same name show their parent folders in the tabs.
-
-Tabs remember your search, selected match, preview/source mode, and scroll
-position in each view. Every open file stays watched. Background saves update
-that document without switching tabs; its preview renders when you select it.
-A missing file keeps its last readable content and shows an error on its tab
-until it returns.
-
-Use =Ctrl+Tab= and =Ctrl+Shift+Tab= to switch tabs on either platform.
-=Cmd+W= on macOS or =Ctrl+W= on Linux closes the active tab. Add Shift to close
-the window. Arrow keys, Home, and End navigate a focused tab strip. Closing the
-last tab leaves an Open action. Tabs are not restored after quitting.
-
-Up to 20 documents can be open, with a 16 MiB limit per file and 64 MiB of
-source files in total. Close a tab to free its watcher and retained content.
-Only the active document retains an image cache and mounted preview.
-
-* Mermaid diagrams
-Mermaid source blocks render as diagrams automatically when you open or save
-an Org or Markdown file. The renderer is bundled locally; no Emacs, CLI tool, or network
-connection is required. Flowcharts and sequence diagrams are covered by the
-app's desktop checks. Other diagram types in the bundled Mermaid library can
-render, subject to the same limits and offline asset restrictions.
-
-#+begin_src mermaid
-flowchart LR
-  Draft --> Review
-  Review -->|Approved| Publish
-  Review -->|Changes| Draft
-#+end_src
-
-Diagrams follow the active appearance theme. Use *Show source* below a diagram
-to read or search its text. Source view always shows the original document.
-Invalid diagrams show their source and an explanation without interrupting the
-rest of the preview.
-
-An immediately following =#+RESULTS:= with one local image link is hidden after
-successful diagram rendering, so an existing Babel image does not appear twice.
-Named blocks require matching result names. If rendering fails, the generated
-image remains visible. Unrelated and ambiguous results remain unchanged.
-
-Rendering is limited to 20 diagrams per document, 20,000 characters per block,
-100,000 diagram characters per document, 200 edges where the diagram type
-supports that limit, 4 MiB of generated SVG per diagram, and five seconds per
-render request. Layout runs in a separate sandboxed renderer so a slow diagram
-can be stopped without freezing the reader.
-
-Mermaid configuration directives and Mermaid's own YAML frontmatter are not
-supported. Hugo document front matter is supported separately.
-HTML labels, diagram links, callbacks, and external resources are disabled.
-Babel headers such as =:file= never write files or run commands. Generate
-Graphviz, PlantUML, or ditaa images in your editor and use local image links
-for those formats.
-
-* Appearance
-Open *Appearance* in the toolbar to choose *System*, *Light*, or *Dark* mode.
-Choose a light theme and a dark theme independently:
-
-- *Default Light* and *Default Dark* keep Markup Preview's original colors.
-- *Solarized Light* and *Solarized Dark* use the [[https://ethanschoonover.com/solarized/][Solarized palette]].
-
-System switches between your preferred themes when your device changes
-appearance. Light and Dark stay in the selected mode. Both theme preferences
-remain editable in every mode, and changes save immediately for the next launch.
-Existing installations keep their mode and use the default theme pair.
-
-Enable *Sans-serif headings* to use the app's sans-serif font for the document
-title and headings. This preference applies to every theme and saves immediately.
-It starts off, preserving the original heading fonts.
-
-* Syntax highlighting
-Preview source blocks use their declared language, such as =#+begin_src python=.
-Highlighting works offline and follows the selected color theme.
-
-Bundled languages include Bash, C, C++, CSS, diff, Go, INI/TOML, Java,
-JavaScript, JSON, Lisp, Lua, Markdown, Nix, Python, Ruby, Rust, SQL,
-TypeScript, XML/HTML, and YAML. Common aliases such as =js=, =ts=, =sh=,
-and =yml= work too. =emacs-lisp= and =elisp= use the generic Lisp grammar.
-
-Unknown or missing languages, example/export blocks, and inline code stay
-plain text. Blocks over 50,000 characters stay plain text, with a total
-highlighting budget of 200,000 characters per document to limit rendering work.
-Mermaid blocks use the diagram renderer described above. The read-only
-source view stays plain text. Babel code never executes.
-
-* Local images
-Image links without descriptions display inline, for example
-=[[file:images/chart.png]]= or =[[./photo.jpg]]=.
-PNG, JPEG, GIF, WebP, and SVG files are supported. Relative paths resolve
-from the document's folder; absolute paths and =~/= paths also work.
-Images fit the reading column without being stretched beyond their size.
-
-Missing, unreadable, or invalid images show a placeholder while the document
-remains readable. Images reload when you save the document or close and reopen its tab.
-Image-only changes are not watched separately. Web images remain links,
-and Org links with descriptions remain text, following Org's inline-image convention.
-Markdown image descriptions provide alt text.
-
-Previews are limited to 100 image links, 8 MiB per image, and 32 MiB of unique
-image data per document. SVGs display in an image context, without executing
-scripts or loading external resources. Embedded HTML remains inert.
 
 * Install
 You do not need Node.js, npm, or Emacs to use a downloaded release.
@@ -372,6 +406,9 @@ change in the editor; the preview updates automatically. Search with
 Your files stay local. Opening a preview does not modify the document.
 
 ** Replacing Org Preview with Markup Preview
+Markup Preview began as Org Preview, a standalone reader for Org-mode files.
+v0.7.0 added Markdown support and kept the original Org heading icon.
+
 v0.7.0 uses a new application ID, command name, and settings namespace.
 Appearance starts at its defaults. No settings are migrated, and the old
 application and its settings are left untouched.
@@ -395,15 +432,6 @@ the command link and icon path. Your documents are independent of the app.
 On Wayland, Markup Preview avoids Chromium's incompatible Vulkan startup paths
 and uses OpenGL acceleration. No extra launcher flags are needed. An explicit
 =--ozone-platform=x11= launch keeps the default X11 graphics configuration.
-
-* Why
-Markup Preview began as Org Preview, a standalone reader for Org-mode files.
-v0.7.0 adds Markdown while retaining the Org heading icon as a nod to those
-origins. The icon artwork and all generated icon files are unchanged.
-
-Keep writing in your editor. Open the file here to read it, follow its outline,
-and see saves immediately. No account, cloud service, or Emacs installation
-is needed. The app takes inspiration from [[https://markdownpreview.app][Markdown Preview]].
 
 * Approach
 Electron provides the desktop shell. Orga parses Org syntax, and
@@ -438,18 +466,6 @@ npm run dev -- ~/notes/today.org
 npm start -- ~/notes/today.org
 #+end_src
 
-Open files with the toolbar, drag and drop, or =Cmd/Ctrl+O=. Save in your
-editor to refresh the preview. The app polls the open file every 300 ms and
-keeps watching after atomic saves or deletion and recreation. It opens up to 20
-files at a time and supports UTF-8 files up to 16 MiB each, with a 64 MiB total. Large documents can take
-longer to render, depending on their structure.
-
-Use =Cmd/Ctrl+F= to search. Enter advances to the next match and Shift+Enter
-moves back. Search stays inside the current document view and shows up to
-1,000 matches. =Cmd/Ctrl+Shift+S= switches between preview and read-only source.
-Use =Cmd/Ctrl++= and =Cmd/Ctrl+-= to zoom. Click the file card to reveal the
-file in Finder or your file manager.
-
 * Build a desktop app
 Run these commands on the target operating system. Build output goes in
 =release/=. These commands create local artifacts and do not publish releases.
@@ -465,75 +481,6 @@ macOS builds are ad-hoc signed. CI verifies the signatures inside both ZIP
 and DMG packages. Developer ID signing and notarization are still needed
 for downloads that macOS trusts automatically. The app declares itself as
 an Org or Markdown file viewer so installed builds can appear in Open With.
-
-* Automatic releases
-Every push to =main=, including merge, squash, and rebase merges, starts a
-minor release. Documentation-only merges also release. The original first version was
-=0.1.0=; subsequent versions increment the highest stable tag's minor number
-and reset its patch number, for example =0.2.0= and =0.3.0=.
-
-Open PRs and manual Desktop checks runs only validate builds. Main releases use
-the same build workflow, stamp the selected version into both package files,
-and require all tests, platform builds, and artifact checks to pass before
-publishing. The app's version label follows that stamped version.
-
-Release runs queue instead of canceling earlier pending merges. GitHub can
-queue up to 100 pending runs. A merged-PR fallback also listens for completed
-merges, so a skip marker inherited by a squash message cannot suppress a
-release. It runs only after merging into main, checks out that exact merged
-commit, and verifies that the commit belongs to main's history. It never
-executes an unmerged PR head. Duplicate push/merge events reuse the same
-release and do not increment the version twice.
-
-For recovery, open Actions → Release a minor version → Run workflow and
-select =main=. This uses the same checks, checksum verification, and retry
-rules. A manual run for an already-published main commit does nothing. Direct
-pushes containing skip markers can be recovered this way too.
-
-Only the publisher job has repository write permission. It checks all four
-packages against their checksums, creates a versioned source commit and tag,
-uploads six assets to a draft, then publishes after every upload succeeds.
-The tagged commit has the merged main commit as its parent. It updates only
-the package versions, so checking out a tag reproduces the released version.
-The workflow never pushes a version-bump commit back to =main= or triggers
-a release loop. Main's package version is the development baseline, currently =0.7.0=.
-New release source commits use =Markup-Preview-Source:= markers; historical
-=Org-Preview-Source:= markers remain recognized for retry detection.
-
-If a run fails, fix the cause and rerun it in Actions. A retry reuses any tag
-already assigned to that source commit and completes a partial draft.
-Published releases and their assets are left untouched. An older draft retry
-will not replace a newer release as GitHub's latest release. Failed builds
-publish nothing. Generated release notes list changes since the previous tag
-and include version-specific installation instructions and known limits.
-
-* Org rendering
-- Document title, subtitle, author, headings, and outline navigation.
-- TODO and DONE states, priorities, tags, planning lines, and folded drawers.
-- Bold, italic, underline, strike-through, code, and verbatim text.
-- Ordered and unordered lists, nested lists, and read-only checkboxes.
-- Tables, source/example blocks, quotes, and HTTP/HTTPS/mailto links.
-- Internal heading links and =CUSTOM_ID= links for common cases.
-
-The preview uses Orga's syntax tree and an explicit HTML renderer. It is not
-Emacs's exporter. Custom TODO workflows, footnotes, inline math, timestamps,
-macros, export options, and complex Org constructs may display literally or
-incompletely. Source view always shows the original file.
-
-Local image links display inline. Links to supported local documents open in tabs.
-Raw export blocks display as text. Babel, includes, embedded HTML, and
-custom URL handlers never execute. Documents cannot fetch network resources.
-Clicking a web link opens your browser. No telemetry or cloud services.
-
-* Parser patches
-Orga 4.7.1 recursively advances through tokens and can exhaust Electron's
-JavaScript stack on long sections. =patches/orga+4.7.1.patch= replaces those
-tail calls with an iterative loop and appends tokens without copying the
-entire token history. =npm ci= applies the patches through =patch-package=
-and fails if they no longer apply.
-=patches/text-kit+4.5.1.patch= changes character-to-line lookup from a linear
-scan to binary search and reuses position helpers between range readers.
-Both versions stay pinned until upstream fixes replace these patches.
 
 * Development and checks
 #+begin_src sh
@@ -583,6 +530,57 @@ in the source tree.
 
 The first commit contains only this project's original goal and scope.
 See [[file:RELEASE-NOTES.org][release information]] for packages, installation instructions, and known limits.
+
+* Parser patches
+Orga 4.7.1 recursively advances through tokens and can exhaust Electron's
+JavaScript stack on long sections. =patches/orga+4.7.1.patch= replaces those
+tail calls with an iterative loop and appends tokens without copying the
+entire token history. =npm ci= applies the patches through =patch-package=
+and fails if they no longer apply.
+=patches/text-kit+4.5.1.patch= changes character-to-line lookup from a linear
+scan to binary search and reuses position helpers between range readers.
+Both versions stay pinned until upstream fixes replace these patches.
+
+* Automatic releases
+Every push to =main=, including merge, squash, and rebase merges, starts a
+minor release. Documentation-only merges also release. The original first version was
+=0.1.0=; subsequent versions increment the highest stable tag's minor number
+and reset its patch number, for example =0.2.0= and =0.3.0=.
+
+Open PRs and manual Desktop checks runs only validate builds. Main releases use
+the same build workflow, stamp the selected version into both package files,
+and require all tests, platform builds, and artifact checks to pass before
+publishing. The app's version label follows that stamped version.
+
+Release runs queue instead of canceling earlier pending merges. GitHub can
+queue up to 100 pending runs. A merged-PR fallback also listens for completed
+merges, so a skip marker inherited by a squash message cannot suppress a
+release. It runs only after merging into main, checks out that exact merged
+commit, and verifies that the commit belongs to main's history. It never
+executes an unmerged PR head. Duplicate push/merge events reuse the same
+release and do not increment the version twice.
+
+For recovery, open Actions → Release a minor version → Run workflow and
+select =main=. This uses the same checks, checksum verification, and retry
+rules. A manual run for an already-published main commit does nothing. Direct
+pushes containing skip markers can be recovered this way too.
+
+Only the publisher job has repository write permission. It checks all four
+packages against their checksums, creates a versioned source commit and tag,
+uploads six assets to a draft, then publishes after every upload succeeds.
+The tagged commit has the merged main commit as its parent. It updates only
+the package versions, so checking out a tag reproduces the released version.
+The workflow never pushes a version-bump commit back to =main= or triggers
+a release loop. Main's package version is the development baseline, currently =0.7.0=.
+New release source commits use =Markup-Preview-Source:= markers; historical
+=Org-Preview-Source:= markers remain recognized for retry detection.
+
+If a run fails, fix the cause and rerun it in Actions. A retry reuses any tag
+already assigned to that source commit and completes a partial draft.
+Published releases and their assets are left untouched. An older draft retry
+will not replace a newer release as GitHub's latest release. Failed builds
+publish nothing. Generated release notes list changes since the previous tag
+and include version-specific installation instructions and known limits.
 
 * License and acknowledgments
 The project uses the [[file:LICENSE][BSD 3-Clause license]]. The [[https://github.com/orgapp/orgajs][Orga]] parser is MIT-licensed.

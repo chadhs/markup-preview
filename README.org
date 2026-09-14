@@ -15,6 +15,10 @@ An Org notebook in Default Light, with outline navigation and document search.
 
 [[file:docs/screenshots/preview-org-light.png]]
 
+The same Org notebook in Default Dark.
+
+[[file:docs/screenshots/preview-org-dark.png]]
+
 * Everyday reading
 Open local UTF-8 =.org=, =.md=, and =.markdown= files. Keep the same file open in your
 editor and save changes to update the preview. Click a heading in the outline
@@ -79,6 +83,10 @@ Only the active document retains an image cache and mounted preview.
 Preview source blocks use their declared language, such as =#+begin_src python=.
 Highlighting works offline and follows the selected color theme.
 
+JavaScript and Python highlighting in Default Light.
+
+[[file:docs/screenshots/preview-org-code.png]]
+
 Bundled languages include Bash, C, C++, CSS, diff, Go, INI/TOML, Java,
 JavaScript, JSON, Lisp, Lua, Markdown, Nix, Python, Ruby, Rust, SQL,
 TypeScript, XML/HTML, and YAML. Common aliases such as =js=, =ts=, =sh=,
@@ -138,6 +146,10 @@ Image links without descriptions display inline, for example
 PNG, JPEG, GIF, WebP, and SVG files are supported. Relative paths resolve
 from the document's folder; absolute paths and =~/= paths also work.
 Images fit the reading column without being stretched beyond their size.
+
+Inline local images in Solarized Light.
+
+[[file:docs/screenshots/preview-org-images.png]]
 
 Missing, unreadable, or invalid images show a placeholder while the document
 remains readable. Images reload when you save the document or close and reopen its tab.

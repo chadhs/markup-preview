@@ -144,6 +144,7 @@ export async function checkTabsAndOrgDiagrams(app, window, directory, prefix) {
   const all = await window.evaluate(() => window.markupPreview.initial());
   for (const tab of all.tabs) await window.evaluate((id) => window.markupPreview.close(id), tab.id);
   await expect(window.locator('#empty-state')).toBeVisible();
+  await expect(window.locator('#toggle-content-width')).toBeDisabled();
   await expect(window.locator('#document-tabs [role="tab"]')).toHaveCount(0);
   await app.evaluate(({ dialog }, file) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [file] }); }, b);
   await window.locator('#empty-open').click();

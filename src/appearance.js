@@ -3,10 +3,12 @@ const storageKeys = {
   light: 'markup-preview-light-theme',
   dark: 'markup-preview-dark-theme',
   sansSerifHeadings: 'markup-preview-sans-serif-headings',
+  contentWidth: 'markup-preview-content-width',
 };
 
 export function normalizePreferences(preferences = {}) {
   return {
+    contentWidth: ['reading', 'full'].includes(preferences.contentWidth) ? preferences.contentWidth : 'reading',
     mode: ['system', 'light', 'dark'].includes(preferences.mode) ? preferences.mode : 'system',
     light: ['light', 'solarized-light'].includes(preferences.light) ? preferences.light : 'light',
     dark: ['dark', 'solarized-dark'].includes(preferences.dark) ? preferences.dark : 'dark',
@@ -32,7 +34,9 @@ export function resolveTheme(preferences, systemDark) {
 export function initializeAppearance() {
   const button = document.querySelector('#appearance-button');
   const panel = document.querySelector('#appearance-panel');
+  const widthToggle = document.querySelector('#toggle-content-width');
   const controls = {
+    contentWidth: document.querySelector('#content-width'),
     mode: document.querySelector('#appearance-mode'),
     light: document.querySelector('#light-theme'),
     dark: document.querySelector('#dark-theme'),
@@ -45,17 +49,29 @@ export function initializeAppearance() {
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = colorScheme;
     document.documentElement.dataset.headingFont = preferences.sansSerifHeadings ? 'sans-serif' : 'default';
+    document.documentElement.dataset.contentWidth = preferences.contentWidth;
+    const fullWidth = preferences.contentWidth === 'full';
+    widthToggle.setAttribute('aria-pressed', String(fullWidth));
+    widthToggle.title = fullWidth ? 'Use reading width' : 'Use full width';
+    widthToggle.setAttribute('aria-label', widthToggle.title);
+    for (const [name, control] of Object.entries(controls)) {
+      if (control.type === 'checkbox') control.checked = preferences[name];
+      else control.value = preferences[name];
+    }
     void window.markupPreview.windowTheme(theme).catch(() => {});
   }
   for (const [name, control] of Object.entries(controls)) {
-    if (control.type === 'checkbox') control.checked = preferences[name];
-    else control.value = preferences[name];
     control.addEventListener('change', () => {
       preferences = normalizePreferences({ ...preferences, [name]: control.type === 'checkbox' ? control.checked : control.value });
       savePreferences(localStorage, preferences);
       apply();
     });
   }
+  widthToggle.addEventListener('click', () => {
+    preferences = normalizePreferences({ ...preferences, contentWidth: preferences.contentWidth === 'full' ? 'reading' : 'full' });
+    savePreferences(localStorage, preferences);
+    apply();
+  });
   systemAppearance.addEventListener('change', apply);
   apply();
 

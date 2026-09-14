@@ -10,6 +10,7 @@ import { checkOrgHighlighting } from './lib/org-highlight-smoke.mjs';
 import { checkTabsAndOrgDiagrams } from './lib/tabs-org-diagrams-smoke.mjs';
 import { checkMarkdown } from './lib/markdown-smoke.mjs';
 import { checkHugoMetadata } from './lib/hugo-smoke.mjs';
+import { checkContentWidth } from './lib/content-width-smoke.mjs';
 import { checkOrgImages } from './lib/org-images-smoke.mjs';
 
 const directory = await mkdtemp(path.join(tmpdir(), 'markup-preview-smoke-'));
@@ -161,6 +162,7 @@ try {
   await checkTabsAndOrgDiagrams(app, window, directory, executablePath ? 'packaged' : 'desktop');
   await checkMarkdown(app, window, directory, executablePath ? 'packaged' : 'desktop', appArgs, profileArg, env);
   await checkHugoMetadata(window, directory, executablePath ? 'packaged' : 'desktop');
+  await checkContentWidth(window, directory, executablePath ? 'packaged' : 'desktop');
   // Exercise the same picker path used by the Open button without a native dialog.
   await app.evaluate(({ dialog }, welcome) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [welcome] }); }, path.resolve('examples/welcome.org'));
   await window.locator('#open').click();
@@ -209,7 +211,7 @@ try {
     expect(await window.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await window.screenshot({ path: `test-results/${screenshotPrefix}-solarized-${mode}-narrow.png` });
   }
-  await setAppearance(window, { mode: 'system' });
+  await setAppearance(window, { mode: 'system', contentWidth: 'full' });
   await expect(window.locator('#appearance-mode')).toHaveValue('system');
   expect(await window.evaluate(() => localStorage.getItem('markup-preview-theme'))).toBe('system');
   await app.close();
@@ -224,6 +226,8 @@ try {
   await expect(window.locator('#appearance-mode')).toHaveValue('system');
   await expect(window.locator('#light-theme')).toHaveValue('solarized-light');
   await expect(window.locator('#dark-theme')).toHaveValue('solarized-dark');
+  await expect(window.locator('#content-width')).toHaveValue('full');
+  await expect(window.locator('#toggle-content-width')).toHaveAttribute('aria-pressed', 'true');
   await expect(window.locator('#sans-serif-headings')).toBeChecked();
   await expect(window.locator('#document-title')).toHaveCSS('font-family', /sans-serif/);
   await window.emulateMedia({ colorScheme: 'light' });

@@ -51,6 +51,16 @@ Enable *Sans-serif headings* to use the app's sans-serif font for the document
 title and headings. This preference applies to every theme and saves immediately.
 It starts off, preserving the original heading fonts.
 
+Use the width button beside *Preview* / *Source* to switch between *Reading*
+and *Full width*. Reading keeps the centered reading column; Full width uses
+the available preview pane with margins, giving tables and code more room.
+The button is highlighted in Full width and disabled in Source view.
+
+The same choice appears under *Appearance → Content width*. It applies to all
+document tabs and saves for the next launch. Reading is the default. Tables
+wrap at word boundaries and scroll horizontally when they cannot fit.
+Source view and printing keep their existing layouts.
+
 Window controls and reading actions share one compact title bar. The title
 bar and document tabs follow the selected theme, including the background
 behind the native window buttons. Drag unused toolbar space to move the window.

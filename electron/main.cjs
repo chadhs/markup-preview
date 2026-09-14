@@ -2,10 +2,14 @@ const { app, BrowserWindow, dialog, ipcMain, Menu, shell, session } = require('e
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { createSessions } = require('./sessions.cjs');
-const { createDiagramRenderer, diagramSource } = require('./diagrams.cjs');
+const { createDiagramRenderer } = require('./diagrams.cjs');
 const { documentArguments } = require('./arguments.cjs');
 const { configureGraphics } = require('./graphics.cjs');
 const { titlebarOptions, updateTitlebar } = require('./titlebar.cjs');
+const { DOCUMENT_EXTENSIONS } = require('./formats.cjs');
+const { documentResource } = require('./resource-index.cjs');
+const { openDocumentLink } = require('./links.cjs');
+app.setName('Markup Preview');
 configureGraphics(app.commandLine);
 let win;
 let initialized = false;
@@ -21,7 +25,7 @@ const sessions = createSessions({
   changed: (state) => {
     const identity = `${state.activeId}:${state.tabs.find((tab) => tab.id === state.activeId)?.revision}`;
     if (identity !== diagramDocument) { diagrams.cancel(); diagramDocument = identity; diagramEpoch++; }
-    win?.setTitle(sessions.active() ? `${sessions.active().name} — Org Preview` : 'Org Preview');
+    win?.setTitle(sessions.active() ? `${sessions.active().name} — Markup Preview` : 'Markup Preview');
     win?.webContents.send('session:changed', state);
   },
   recent: (file) => app.addRecentDocument(file),
@@ -39,7 +43,7 @@ function requestDocuments(paths) {
   win?.focus();
 }
 async function picker() {
-  const options = { properties: ['openFile', 'multiSelections'], filters: [{ name: 'Org documents', extensions: ['org'] }] };
+  const options = { properties: ['openFile', 'multiSelections'], filters: [{ name: 'Org and Markdown documents', extensions: DOCUMENT_EXTENSIONS }, { name: 'Org documents', extensions: ['org'] }, { name: 'Markdown documents', extensions: ['md', 'markdown'] }] };
   const { canceled, filePaths } = await (win ? dialog.showOpenDialog(win, options) : dialog.showOpenDialog(options));
   if (!canceled && filePaths.length) requestDocuments(filePaths);
 }
@@ -51,7 +55,7 @@ function handle(channel, callback) {
 }
 function createWindow() {
   initialized = false;
-  win = new BrowserWindow({ ...titlebarOptions(), width: 1240, height: 850, minWidth: 720, minHeight: 500, backgroundColor: '#f5f4ef', title: 'Org Preview', icon: iconPath, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true } });
+  win = new BrowserWindow({ ...titlebarOptions(), width: 1240, height: 850, minWidth: 720, minHeight: 500, backgroundColor: '#f5f4ef', title: 'Markup Preview', icon: iconPath, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true } });
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', (event) => event.preventDefault());
   win.webContents.on('before-input-event', (event, input) => {
@@ -87,6 +91,7 @@ else {
     handle('document:open', picker);
     handle('document:path', (file) => sessions.openMany([file]));
     handle('document:paths', (paths) => sessions.openMany(paths));
+    handle('document:link', (id, revision, reference) => openDocumentLink(sessions, id, revision, reference));
     handle('document:activate', (id) => sessions.activate(id));
     handle('document:close', (id) => sessions.close(id));
     handle('document:initial', async () => {
@@ -102,7 +107,8 @@ else {
       const doc = sessions.active();
       if (!doc || doc.id !== id || doc.revision !== revision) return { error: 'The document changed.' };
       try {
-        const source = diagramSource(doc, request);
+        const { source } = await documentResource(doc, 'diagrams', request);
+        if (sessions.active() !== doc) throw new Error('The document changed.');
         if (!['light', 'dark', 'solarized-light', 'solarized-dark'].includes(theme)) throw new Error('Invalid diagram appearance.');
         if (diagramTheme !== theme) { diagrams.cancel(); diagramTheme = theme; diagramEpoch++; }
         const epoch = diagramEpoch;
@@ -118,7 +124,7 @@ else {
     const command = (name) => () => win?.webContents.send('app:command', name);
     Menu.setApplicationMenu(Menu.buildFromTemplate([
       ...(process.platform === 'darwin' ? [{ role: 'appMenu' }] : []),
-      { label: 'File', submenu: [{ label: 'Open Org file…', accelerator: 'CmdOrCtrl+O', click: () => picker().catch(fail) }, { label: 'Reveal file', click: () => sessions.active() && shell.showItemInFolder(sessions.active().path) }, { type: 'separator' }, { label: 'Close tab', accelerator: 'CmdOrCtrl+W', click: () => sessions.active() && sessions.close(sessions.active().id) }, { label: 'Close window', accelerator: 'CmdOrCtrl+Shift+W', role: 'close' }] },
+      { label: 'File', submenu: [{ label: 'Open file…', accelerator: 'CmdOrCtrl+O', click: () => picker().catch(fail) }, { label: 'Reveal file', click: () => sessions.active() && shell.showItemInFolder(sessions.active().path) }, { type: 'separator' }, { label: 'Close tab', accelerator: 'CmdOrCtrl+W', click: () => sessions.active() && sessions.close(sessions.active().id) }, { label: 'Close window', accelerator: 'CmdOrCtrl+Shift+W', role: 'close' }] },
       { role: 'editMenu' },
       { label: 'View', submenu: [{ label: 'Find', accelerator: 'CmdOrCtrl+F', click: command('find') }, { label: 'Toggle source', accelerator: 'CmdOrCtrl+Shift+S', click: command('source') }, { role: 'zoomIn' }, { role: 'zoomOut' }, { role: 'resetZoom' }, { type: 'separator' }, { role: 'togglefullscreen' }, { role: 'toggleDevTools' }] },
       { label: 'Window', submenu: [{ label: 'Next tab', accelerator: 'Ctrl+Tab', click: command('next-tab') }, { label: 'Previous tab', accelerator: 'Ctrl+Shift+Tab', click: command('previous-tab') }, { role: 'minimize' }, { role: 'front' }] },

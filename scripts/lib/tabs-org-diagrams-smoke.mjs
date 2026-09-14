@@ -3,8 +3,8 @@ import { writeFile, mkdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { setAppearance } from './appearance-smoke.mjs';
 
-export async function checkTabsAndDiagrams(app, window, directory, prefix) {
-  const original = await window.evaluate(() => window.orgPreview.initial());
+export async function checkTabsAndOrgDiagrams(app, window, directory, prefix) {
+  const original = await window.evaluate(() => window.markupPreview.initial());
   const a = path.join(directory, 'tabs-a.org');
   const b = path.join(directory, 'tabs-b.org');
   const c = path.join(directory, 'tabs-c.org');
@@ -16,7 +16,7 @@ export async function checkTabsAndDiagrams(app, window, directory, prefix) {
   await app.evaluate(({ dialog }, files) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: files }); }, [a, b]);
   await window.locator('#open').click();
   await expect(window.locator('#document-title')).toHaveText('Tab B');
-  const state = await window.evaluate(() => window.orgPreview.initial());
+  const state = await window.evaluate(() => window.markupPreview.initial());
   const aId = state.tabs.find((tab) => tab.path === a).id;
   const bId = state.tabs.find((tab) => tab.path === b).id;
   await expect(window.locator('#document-title')).toHaveText('Tab B');
@@ -33,9 +33,9 @@ export async function checkTabsAndDiagrams(app, window, directory, prefix) {
   await expect(window.locator('#document-title')).toHaveText('Tab B');
   await expect(window.locator('#search-bar')).toBeHidden();
   await writeFile(a, source.replace('Tab A', 'Saved Tab A'));
-  await expect.poll(async () => (await window.evaluate(() => window.orgPreview.initial())).tabs.find((tab) => tab.id === aId).revision).toBe(2);
+  await expect.poll(async () => (await window.evaluate(() => window.markupPreview.initial())).tabs.find((tab) => tab.id === aId).revision).toBe(2);
   await expect(window.locator('#document-title')).toHaveText('Tab B');
-  await window.evaluate((file) => window.orgPreview.openPath(file), a);
+  await window.evaluate((file) => window.markupPreview.openPath(file), a);
   await expect(window.locator('#document-title')).toHaveText('Saved Tab A');
   await expect(window.locator('#source')).toBeVisible();
   await expect(window.locator('#search-count')).toHaveText('2 / 2');
@@ -58,7 +58,7 @@ export async function checkTabsAndDiagrams(app, window, directory, prefix) {
   await expect(window.locator('#error')).toContainText('File unavailable');
   await writeFile(a, source);
   await expect(window.locator('#error')).toBeHidden();
-  await window.evaluate((file) => window.orgPreview.openPath(file), c);
+  await window.evaluate((file) => window.markupPreview.openPath(file), c);
   await expect(window.locator('#document-title')).toHaveText('Diagrams');
   await expect(window.locator('.diagram[data-rendered="true"]')).toHaveCount(2, { timeout: 20000 });
   await expect(window.locator('.diagram[data-rendered="false"]')).toHaveCount(2);
@@ -87,10 +87,10 @@ export async function checkTabsAndDiagrams(app, window, directory, prefix) {
   await window.screenshot({ path: `test-results/${prefix}-mermaid-sequence.png` });
   // A save racing with a tab switch must never put a diagram in the other file.
   await writeFile(c, '#+title: Updated diagrams\n#+begin_src mermaid\nflowchart LR\n New-->Saved\n#+end_src');
-  await window.evaluate((id) => window.orgPreview.activate(id), bId);
+  await window.evaluate((id) => window.markupPreview.activate(id), bId);
   await expect(window.locator('#document-title')).toHaveText('Tab B');
   await expect(window.locator('.diagram')).toHaveCount(0);
-  await window.evaluate((file) => window.orgPreview.openPath(file), c);
+  await window.evaluate((file) => window.markupPreview.openPath(file), c);
   await expect(window.locator('#document-title')).toHaveText('Updated diagrams');
   await expect(window.locator('.diagram[data-rendered="true"]')).toHaveCount(1);
   // Diagram work has a distinct renderer process and a real termination bound.
@@ -101,11 +101,11 @@ export async function checkTabsAndDiagrams(app, window, directory, prefix) {
     void helper.webContents.executeJavaScript('while (true) {}').catch(() => {});
   });
   await window.evaluate(async () => {
-    const { document: doc } = await window.orgPreview.initial();
+    const { document: doc } = await window.markupPreview.initial();
     const start = doc.source.indexOf('#+begin_src');
     const end = doc.source.indexOf('#+end_src') + '#+end_src'.length;
     window.diagramTimeoutResult = null;
-    void window.orgPreview.diagram(doc.id, doc.revision, { start, end }, document.documentElement.dataset.theme).then((result) => { window.diagramTimeoutResult = result; });
+    void window.markupPreview.diagram(doc.id, doc.revision, { start, end }, document.documentElement.dataset.theme).then((result) => { window.diagramTimeoutResult = result; });
   });
   await window.locator('#source-tab').click();
   await expect(window.locator('#source')).toBeVisible();
@@ -127,10 +127,10 @@ export async function checkTabsAndDiagrams(app, window, directory, prefix) {
   await expect(window.locator('.image-preview img')).toBeVisible();
   await expect(window.locator('.diagram pre')).toBeVisible();
   // A valid file still opens after a failure in the same batch.
-  await window.evaluate((files) => window.orgPreview.openPaths(files), [path.join(directory, 'missing.org'), b]);
+  await window.evaluate((files) => window.markupPreview.openPaths(files), [path.join(directory, 'missing.org'), b]);
   await expect(window.locator('#document-title')).toHaveText('Tab B');
   await expect(window.locator('#error')).toContainText('missing.org');
-  await window.evaluate((id) => window.orgPreview.activate(id), bId);
+  await window.evaluate((id) => window.markupPreview.activate(id), bId);
   await expect(window.locator('#error')).toBeHidden();
   await window.keyboard.press(process.platform === 'darwin' ? 'Meta+w' : 'Control+w');
   await expect(window.locator(`#tab-${bId}`)).toHaveCount(0);
@@ -141,8 +141,8 @@ export async function checkTabsAndDiagrams(app, window, directory, prefix) {
   await expect(window.locator('#document-title')).toHaveText('Tab B');
   await cdp.detach();
   // Closing every tab leaves a usable empty reader, and the picker can reopen.
-  const all = await window.evaluate(() => window.orgPreview.initial());
-  for (const tab of all.tabs) await window.evaluate((id) => window.orgPreview.close(id), tab.id);
+  const all = await window.evaluate(() => window.markupPreview.initial());
+  for (const tab of all.tabs) await window.evaluate((id) => window.markupPreview.close(id), tab.id);
   await expect(window.locator('#empty-state')).toBeVisible();
   await expect(window.locator('#document-tabs [role="tab"]')).toHaveCount(0);
   await app.evaluate(({ dialog }, file) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [file] }); }, b);

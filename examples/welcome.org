@@ -1,13 +1,16 @@
 #+title: Your words, in Org.
 #+subtitle: A quiet place to read what you've been writing.
-#+author: The org-preview notebook
+#+author: The markup-preview notebook
 
 * Make yourself at home
+:PROPERTIES:
+:CUSTOM_ID: welcome
+:END:
 Org is plain text with a little structure. Headings begin with stars,
 links keep their labels close, and a list is just a list. It works in
 Emacs, in your favorite editor, and on the back of an envelope.
 
-This is *org-preview*: a live reader for your =.org= files. Open a file,
+This is *markup-preview*: a live reader for your Org and Markdown files. Open a file,
 keep writing in your editor, and watch this page follow along when you save.
 
 #+begin_quote
@@ -16,7 +19,7 @@ The file is yours. The editor is your choice.
 
 * A small plan for today
 - [X] Find a comfortable place to write
-- [X] Open this notebook in org-preview
+- [X] Open this notebook in markup-preview
 - [ ] Put a thought into words
   - A sentence is a perfectly good start.
 - [ ] Save the file and see the preview update
@@ -68,5 +71,6 @@ npm run dev -- ~/notes/today.org ~/notes/project.org
 #+end_src
 
 Switch tabs with =Ctrl+Tab= or =Ctrl+Shift+Tab=. Each tab remembers your place.
-Local images display inline. Links to other Org files, math rendering, and
-full Emacs export compatibility remain outside the current release.
+Local images display inline. Links to other Org and Markdown documents open
+in tabs. Try [[file:welcome.md#code-and-diagrams][the Markdown notebook]].
+Math rendering and full Emacs export compatibility remain outside this release.

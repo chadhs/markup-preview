@@ -11,9 +11,9 @@ export async function setAppearance(window, preferences) {
 export async function checkAppearance(window) {
   await window.emulateMedia({ colorScheme: 'light' });
   await expect(window.locator('html')).toHaveAttribute('data-theme', 'light');
-  // Exercise the old saved settings through real renderer initialization.
+  // Exercise the saved settings through real renderer initialization.
   for (const mode of ['dark', 'light', 'system']) {
-    await window.evaluate((mode) => localStorage.setItem('org-preview-theme', mode), mode);
+    await window.evaluate((mode) => localStorage.setItem('markup-preview-theme', mode), mode);
     await window.reload();
     await expect(window.locator('#appearance-mode')).toHaveValue(mode);
     await expect(window.locator('#light-theme')).toHaveValue('light');

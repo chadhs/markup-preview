@@ -3,11 +3,17 @@ const { constants } = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const { fileURLToPath } = require('node:url');
+const { MAX_IMAGE_LINKS } = require('./formats.cjs');
+const { documentResource } = require('./resource-index.cjs');
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const MAX_DOCUMENT_IMAGE_BYTES = 32 * 1024 * 1024;
 
 function imagePath(documentPath, target) {
-  if (/^file:\/\//i.test(target)) return fileURLToPath(target);
+  if (/^file:\/\//i.test(target)) {
+    const url = new URL(target);
+    if (url.hostname && url.hostname !== 'localhost') throw new Error('Only local image files are supported.');
+    return fileURLToPath(url);
+  }
   let local = target.replace(/^file:/i, '');
   try { local = decodeURIComponent(local); } catch { /* Keep literal percent signs. */ }
   if (local.includes('\0') || local.startsWith('//') || /^[a-z][a-z0-9+.-]*:/i.test(local)) throw new Error('Only local image files are supported.');
@@ -32,11 +38,10 @@ function createImageReader(doc) {
   const cache = new Map();
   return async (request) => {
     try {
-      const { localImageTarget, MAX_IMAGE_LINKS } = await import('./image-links.mjs');
       if (!request || !Number.isSafeInteger(request.start) || !Number.isSafeInteger(request.end) || request.start < 0 || request.end > doc.source.length || request.end <= request.start || request.end - request.start > 8192) throw new Error('Invalid image reference.');
       const reference = doc.source.slice(request.start, request.end);
       if (reference !== request.reference) throw new Error('The document changed. Reopen it to reload images.');
-      const target = localImageTarget(reference);
+      const { target } = await documentResource(doc, 'images', request);
       if (!target) throw new Error('Only local image links are supported.');
       const file = imagePath(doc.path, target);
       if (cache.has(file)) return await cache.get(file);

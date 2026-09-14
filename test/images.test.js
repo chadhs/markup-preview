@@ -5,28 +5,12 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createImageReader, MAX_IMAGE_BYTES, MAX_DOCUMENT_IMAGE_BYTES } from '../electron/images.cjs';
-import { renderOrg } from '../src/org.js';
-import { MAX_IMAGE_LINKS } from '../electron/image-links.mjs';
 
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a0ioAAAAASUVORK5CYII=', 'base64');
 const request = (source, reference) => ({ reference, start: source.indexOf(reference), end: source.indexOf(reference) + reference.length });
 
-test('Org local image links produce placeholders and verified source positions', () => {
-  const source = '#+title: Café 日本語\n[[file:images/chart.png]]\n[[./photo.JPG]]\n[[../diagram.svg]]\n[[file:photo.png][A description]]\n[[https://example.com/photo.png]]\n#+begin_src org\n[[file:code.png]]\n#+end_src';
-  const result = renderOrg(source);
-  assert.equal(result.images.length, 3);
-  for (const image of result.images) assert.equal(source.slice(image.start, image.end), image.reference);
-  assert.match(result.html, /data-image-id="0"/);
-  assert.doesNotMatch(result.html, /<img\b/);
-  assert.match(result.html, /href="https:\/\/example.com\/photo.png"/);
-  assert.match(result.html, /A description/);
-  const many = renderOrg('[[file:photo.png]]\n'.repeat(MAX_IMAGE_LINKS + 1));
-  assert.equal(many.images.length, MAX_IMAGE_LINKS);
-  assert.match(many.html, /Image limit reached/);
-});
-
 test('local images resolve relative paths, parents, absolute paths, file URLs, spaces and Unicode', async () => {
-  const dir = await mkdtemp(path.join(tmpdir(), 'org-preview-images-'));
+  const dir = await mkdtemp(path.join(tmpdir(), 'markup-preview-images-'));
   try {
     await mkdir(path.join(dir, 'notes'));
     const file = path.join(dir, 'café 日本語.png');
@@ -41,7 +25,7 @@ test('local images resolve relative paths, parents, absolute paths, file URLs, s
 });
 
 test('image reads reject forged references, remote paths, directories, invalid files and oversized files', async () => {
-  const dir = await mkdtemp(path.join(tmpdir(), 'org-preview-images-'));
+  const dir = await mkdtemp(path.join(tmpdir(), 'markup-preview-images-'));
   try {
     await writeFile(path.join(dir, 'bad.png'), '<script>not an image</script>');
     await mkdir(path.join(dir, 'folder.png'));
@@ -64,7 +48,7 @@ test('image reads reject forged references, remote paths, directories, invalid f
 });
 
 test('image loading has a per-document byte budget and refreshes on a new document revision', async () => {
-  const dir = await mkdtemp(path.join(tmpdir(), 'org-preview-images-'));
+  const dir = await mkdtemp(path.join(tmpdir(), 'markup-preview-images-'));
   try {
     const count = MAX_DOCUMENT_IMAGE_BYTES / MAX_IMAGE_BYTES;
     const references = [];

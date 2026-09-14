@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { renderOrg } from '../src/org.js';
-import { diagramSource } from '../electron/diagrams.cjs';
+import { documentResource } from '../electron/resource-index.cjs';
+const orgDiagramSource = async (doc, request) => (await documentResource({ ...doc, format: 'org' }, 'diagrams', request)).source;
 
 const block = (body = 'flowchart LR\n A-->B', header = 'mermaid') => `#+begin_src ${header}\n${body}\n#+end_src`;
 test('Mermaid descriptors preserve source positions and safe source fallback', () => {
@@ -45,13 +46,13 @@ test('diagram limits retain escaped source and bound scheduled rendering', () =>
   assert.equal(renderOrg(Array.from({ length: 6 }, () => block('a'.repeat(20000))).join('\n\n')).diagrams.length, 5);
 });
 
-test('diagram requests only extract bounded Mermaid blocks from document source', () => {
+test('Org diagram requests only extract parsed Mermaid blocks from document source', async () => {
   const source = `* Header\n${block('flowchart LR\n A-->B', 'MERMAID :file output.svg')}\n`;
   const request = renderOrg(source).diagrams[0];
-  assert.equal(diagramSource({ source }, request), 'flowchart LR\n A-->B');
+  assert.equal((await orgDiagramSource({ source }, request)).trimEnd(), 'flowchart LR\n A-->B');
   for (const invalid of [null, {}, { start: -1, end: 3 }, { start: 0, end: source.length + 1 }, { start: 0, end: source.length }, { ...request, start: request.start + 1 }]) {
-    assert.throws(() => diagramSource({ source }, invalid), /Invalid/);
+    await assert.rejects(orgDiagramSource({ source }, invalid), /Invalid/);
   }
   const long = block('x'.repeat(20001));
-  assert.throws(() => diagramSource({ source: long }, { start: 0, end: long.length }), /oversized/);
+  await assert.rejects(orgDiagramSource({ source: long }, { start: 0, end: long.length }), /Invalid/);
 });

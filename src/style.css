@@ -139,3 +139,8 @@ button:disabled { opacity: .4; cursor: default; }
 .diagram-output img { display: block; max-width: 100%; height: auto; margin: auto; }
 .diagram details { border-top: 1px solid var(--line); }
 .diagram summary { padding: 8px 16px; cursor: pointer; font-size: 12px; color: var(--muted); }
+
+.table-wrap .align-left { text-align: left; }
+.table-wrap .align-center { text-align: center; }
+.table-wrap .align-right { text-align: right; }
+.footnotes { font-size: .9em; }

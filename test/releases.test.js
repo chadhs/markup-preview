@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { planRelease, parseVersion, stampVersion, assetNames, verifyAssets, sha256, assertMainRelease, uploadAndPublish, releaseNotes } from '../scripts/lib/releases.mjs';
+import { planRelease, releaseSource, parseVersion, stampVersion, assetNames, verifyAssets, sha256, assertMainRelease, uploadAndPublish, releaseNotes } from '../scripts/lib/releases.mjs';
 const source = 'a'.repeat(40);
 
 test('first release uses the initial version, then increments minors numerically', () => {
@@ -31,10 +31,10 @@ test('version and publication guards reject malformed or non-main inputs', () =>
 });
 
 test('stamping changes both version manifests and preserves dependency data', async () => {
-  const dir = await mkdtemp(path.join(tmpdir(), 'org-version-'));
+  const dir = await mkdtemp(path.join(tmpdir(), 'markup-version-'));
   try {
-    await writeFile(path.join(dir, 'package.json'), JSON.stringify({ name: 'org-preview', version: '0.1.0', dependencies: { orga: '^4.7.1' } }));
-    await writeFile(path.join(dir, 'package-lock.json'), JSON.stringify({ name: 'org-preview', version: '0.1.0', packages: { '': { version: '0.1.0', dependencies: { orga: '^4.7.1' } }, 'node_modules/orga': { version: '4.7.1' } } }));
+    await writeFile(path.join(dir, 'package.json'), JSON.stringify({ name: 'markup-preview', version: '0.1.0', dependencies: { orga: '^4.7.1' } }));
+    await writeFile(path.join(dir, 'package-lock.json'), JSON.stringify({ name: 'markup-preview', version: '0.1.0', packages: { '': { version: '0.1.0', dependencies: { orga: '^4.7.1' } }, 'node_modules/orga': { version: '4.7.1' } } }));
     await stampVersion(dir, '0.12.0');
     const pkg = JSON.parse(await readFile(path.join(dir, 'package.json')));
     const lock = JSON.parse(await readFile(path.join(dir, 'package-lock.json')));
@@ -47,7 +47,7 @@ test('stamping changes both version manifests and preserves dependency data', as
 });
 
 test('all six assets and matching checksums are required before publication', async () => {
-  const dir = await mkdtemp(path.join(tmpdir(), 'org-assets-'));
+  const dir = await mkdtemp(path.join(tmpdir(), 'markup-assets-'));
   const names = assetNames('0.2.0');
   try {
     for (const name of names.slice(0, 4)) await writeFile(path.join(dir, name), `Test package ${name}`);
@@ -105,10 +105,10 @@ test('published releases are untouched, draft retries replace partial assets, ol
 });
 
 test('release notes use the actual version and source, without stale publication instructions', () => {
-  const notes = releaseNotes({ version: '0.12.0', repository: 'chadhs/org-preview', source, changes: 'Merged feature A.' });
-  assert.match(notes, /org-preview-0\.12\.0-arm64\.dmg/);
-  assert.match(notes, /org-preview-0\.12\.0\.tar\.gz/);
-  assert.match(notes, /ORG_PREVIEW_VERSION=0\.12\.0/);
+  const notes = releaseNotes({ version: '0.12.0', repository: 'chadhs/markup-preview', source, changes: 'Merged feature A.' });
+  assert.match(notes, /markup-preview-0\.12\.0-arm64\.dmg/);
+  assert.match(notes, /markup-preview-0\.12\.0\.tar\.gz/);
+  assert.match(notes, /MARKUP_PREVIEW_VERSION=0\.12\.0/);
   assert.ok(notes.includes('/blob/v0.12.0/README.org#install'));
   assert.ok(notes.includes(source));
   assert.match(notes, /Merged feature A/);
@@ -141,4 +141,20 @@ test('renamed uploads are rejected before publication', async () => {
   api.upload = async (_url, asset) => ({ name: 'unexpected-name.dmg', state: 'uploaded', size: asset.size, digest: asset.digest });
   await assert.rejects(uploadAndPublish(api, plan, assets, 'Notes'), /Upload verification failed/);
   assert.ok(!api.calls.some((call) => call.body?.draft === false));
+});
+
+// Historical source markers remain readable without changing old tags.
+test('v0.7.0 follows v0.6.0 and both source-marker names preserve retry identity', () => {
+  const commit = 'c'.repeat(40);
+  for (const name of ['Org', 'Markup']) {
+    const message = `Release v0.6.0\n\n${name}-Preview-Source: ${source}`;
+    assert.equal(releaseSource(commit, message, [source]), source);
+    assert.equal(releaseSource(commit, message, []), commit);
+    assert.equal(releaseSource(commit, message, [source, commit]), commit);
+    assert.equal(releaseSource(commit, message, [commit]), commit);
+  }
+  const tags = [{ tag: 'v0.6.0', source: 'b'.repeat(40) }];
+  assert.equal(planRelease('0.7.0', tags, source).version, '0.7.0');
+  tags.push({ tag: 'v0.7.0', source });
+  assert.equal(planRelease('0.7.0', tags, source).existing, true);
 });

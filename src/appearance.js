@@ -1,8 +1,8 @@
 const storageKeys = {
-  mode: 'org-preview-theme',
-  light: 'org-preview-light-theme',
-  dark: 'org-preview-dark-theme',
-  sansSerifHeadings: 'org-preview-sans-serif-headings',
+  mode: 'markup-preview-theme',
+  light: 'markup-preview-light-theme',
+  dark: 'markup-preview-dark-theme',
+  sansSerifHeadings: 'markup-preview-sans-serif-headings',
 };
 
 export function normalizePreferences(preferences = {}) {
@@ -45,7 +45,7 @@ export function initializeAppearance() {
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = colorScheme;
     document.documentElement.dataset.headingFont = preferences.sansSerifHeadings ? 'sans-serif' : 'default';
-    void window.orgPreview.windowTheme(theme).catch(() => {});
+    void window.markupPreview.windowTheme(theme).catch(() => {});
   }
   for (const [name, control] of Object.entries(controls)) {
     if (control.type === 'checkbox') control.checked = preferences[name];

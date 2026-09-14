@@ -7,10 +7,10 @@ function storage(entries = []) {
   return { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
 }
 
-test('new and existing installations keep their appearance mode and default themes', () => {
+test('Markup Preview preferences use their own namespace and default themes', () => {
   assert.deepEqual(readPreferences(storage()), { mode: 'system', light: 'light', dark: 'dark', sansSerifHeadings: false });
   for (const mode of ['system', 'light', 'dark']) {
-    assert.deepEqual(readPreferences(storage([['org-preview-theme', mode]])), { mode, light: 'light', dark: 'dark', sansSerifHeadings: false });
+    assert.deepEqual(readPreferences(storage([['markup-preview-theme', mode]])), { mode, light: 'light', dark: 'dark', sansSerifHeadings: false });
   }
 });
 
@@ -28,14 +28,14 @@ test('invalid settings fall back independently without losing valid preferences'
   }
 });
 
-test('preferences persist separately while the legacy key continues to store mode', () => {
+test('preferences persist separately under the Markup Preview namespace', () => {
   const saved = storage();
   const preferences = { mode: 'system', light: 'solarized-light', dark: 'solarized-dark', sansSerifHeadings: true };
   savePreferences(saved, preferences);
-  assert.equal(saved.getItem('org-preview-theme'), 'system');
-  assert.equal(saved.getItem('org-preview-light-theme'), 'solarized-light');
-  assert.equal(saved.getItem('org-preview-dark-theme'), 'solarized-dark');
-  assert.equal(saved.getItem('org-preview-sans-serif-headings'), 'true');
+  assert.equal(saved.getItem('markup-preview-theme'), 'system');
+  assert.equal(saved.getItem('markup-preview-light-theme'), 'solarized-light');
+  assert.equal(saved.getItem('markup-preview-dark-theme'), 'solarized-dark');
+  assert.equal(saved.getItem('markup-preview-sans-serif-headings'), 'true');
   assert.deepEqual(readPreferences(saved), preferences);
   savePreferences(saved, { ...preferences, light: 'dark' });
   assert.deepEqual(readPreferences(saved), { ...preferences, light: 'light' });

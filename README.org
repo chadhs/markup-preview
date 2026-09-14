@@ -1,28 +1,60 @@
-#+title: org-preview
-#+subtitle: A live preview for people who write in Org mode
+#+title: markup-preview
+#+subtitle: A live reader for Org mode and Markdown
 
 [[file:build/icons/128x128.png]]
 
-Org Preview is a live reader for local =.org= files on macOS and Linux.
+Markup Preview is a live reader for local =.org=, =.md=, and =.markdown= files
+on macOS and Linux.
 Keep writing in your editor; previews update when you save.
 
 - *Document tabs* keep several notebooks open, with separate search, scroll
   positions, and live updates for each file.
-- *Mermaid diagrams* render directly from Org source blocks, entirely offline,
+- *Mermaid diagrams* render directly from Org source blocks and Markdown fences, entirely offline,
   with a Show source disclosure and support for the selected theme.
 
 [[#install][Install on macOS or Omarchy]]
 
 * Screenshots
-v0.6.0 in Default Light: multiple document tabs, the compact toolbar, and Org
-tasks and tables.
+v0.7.0 in Default Light: Markdown, Org document tabs, and the original icon.
 
 [[file:docs/screenshots/preview-light.png]]
 
-v0.6.0 in Solarized Dark: a Mermaid flowchart rendered from an Org source
-block, with the diagram source expanded below it.
+v0.7.0 in Solarized Dark: Markdown code and an offline Mermaid flowchart.
 
 [[file:docs/screenshots/preview-dark.png]]
+
+* Markdown and local document links
+Open =.md= or =.markdown= files through the same picker, tabs, drag and drop,
+command-line paths, and Open With actions as Org files. Extensions are
+case-insensitive. Preview, source view, search, themes, outline navigation,
+and live updates work in both formats.
+
+Markdown supports CommonMark and GitHub-style tables, read-only task lists,
+strikethrough, autolinks, reference links, and footnotes. A leading H1 becomes
+the page title without appearing twice; other files use their filename.
+Heading fragments follow GitHub-style slugs, including duplicate headings.
+The promoted title remains in the outline and can be linked to.
+
+Fenced code uses the existing offline syntax highlighter. Backtick and tilde
+=mermaid= fences render diagrams, including fences inside lists and quotes.
+Inline and reference-style local images retain their alt text. Remote images
+remain links; embedded HTML displays as escaped text. Frontmatter metadata,
+math, MDX, and wiki-link syntax are not supported.
+
+Links between local Org and Markdown documents open in tabs. Relative paths
+resolve from the source file's folder; absolute paths, =~/= paths, and local
+=file:= URLs also work. An already-open destination reuses its tab.
+Markdown links can target headings with =other.md#heading=. Org file links
+support =[[file:other.org::#custom-id]]= and =[[file:other.org::*Heading]]=.
+For example, =[[file:welcome.md#code-and-diagrams]]= links from Org to Markdown.
+Markdown can link back with =[Org](welcome.org::#custom-id)=.
+
+A heading link switches to preview at the destination. Missing files leave
+the current document open; a missing heading opens the destination and shows
+an explanation. Other local file types and custom protocols are not opened.
+There is no editing, execution, or automatic navigation when a document loads.
+
+Try [[file:examples/welcome.org][the Org notebook]] and [[file:examples/welcome.md][the Markdown notebook]].
 
 * Compact window toolbar
 Window controls and reading actions share one compact title bar. The title
@@ -56,7 +88,7 @@ Only the active document retains an image cache and mounted preview.
 
 * Mermaid diagrams
 Mermaid source blocks render as diagrams automatically when you open or save
-an Org file. The renderer is bundled locally; no Emacs, CLI tool, or network
+an Org or Markdown file. The renderer is bundled locally; no Emacs, CLI tool, or network
 connection is required. Flowcharts and sequence diagrams are covered by the
 app's desktop checks. Other diagram types in the bundled Mermaid library can
 render, subject to the same limits and offline asset restrictions.
@@ -69,7 +101,7 @@ flowchart LR
 #+end_src
 
 Diagrams follow the active appearance theme. Use *Show source* below a diagram
-to read or search its text. Source view always shows the original Org document.
+to read or search its text. Source view always shows the original document.
 Invalid diagrams show their source and an explanation without interrupting the
 rest of the preview.
 
@@ -94,7 +126,7 @@ for those formats.
 Open *Appearance* in the toolbar to choose *System*, *Light*, or *Dark* mode.
 Choose a light theme and a dark theme independently:
 
-- *Default Light* and *Default Dark* keep Org Preview's original colors.
+- *Default Light* and *Default Dark* keep Markup Preview's original colors.
 - *Solarized Light* and *Solarized Dark* use the [[https://ethanschoonover.com/solarized/][Solarized palette]].
 
 System switches between your preferred themes when your device changes
@@ -118,20 +150,21 @@ and =yml= work too. =emacs-lisp= and =elisp= use the generic Lisp grammar.
 Unknown or missing languages, example/export blocks, and inline code stay
 plain text. Blocks over 50,000 characters stay plain text, with a total
 highlighting budget of 200,000 characters per document to limit rendering work.
-Mermaid blocks use the diagram renderer described above. The read-only Org
+Mermaid blocks use the diagram renderer described above. The read-only
 source view stays plain text. Babel code never executes.
 
 * Local images
 Image links without descriptions display inline, for example
 =[[file:images/chart.png]]= or =[[./photo.jpg]]=.
 PNG, JPEG, GIF, WebP, and SVG files are supported. Relative paths resolve
-from the Org file's folder; absolute paths and =~/= paths also work.
+from the document's folder; absolute paths and =~/= paths also work.
 Images fit the reading column without being stretched beyond their size.
 
 Missing, unreadable, or invalid images show a placeholder while the document
-remains readable. Images reload when you save the Org file or close and reopen its tab.
+remains readable. Images reload when you save the document or close and reopen its tab.
 Image-only changes are not watched separately. Web images remain links,
-and links with descriptions remain text, following Org's inline-image convention.
+and Org links with descriptions remain text, following Org's inline-image convention.
+Markdown image descriptions provide alt text.
 
 Previews are limited to 100 image links, 8 MiB per image, and 32 MiB of unique
 image data per document. SVGs display in an image context, without executing
@@ -142,16 +175,15 @@ You do not need Node.js, npm, or Emacs to use a downloaded release.
 Supported downloads are macOS Apple Silicon and Linux x86_64, including
 Arch-based systems such as Omarchy.
 
-After merging, wait for the [[https://github.com/chadhs/org-preview/actions/workflows/release.yml][Release a minor version workflow]] to finish.
-Then open [[https://github.com/chadhs/org-preview/releases/latest][the latest release]] and expand *Assets*. The first release is =v0.1.0=.
-If no release appears, check that workflow before trying to download.
+Open [[https://github.com/chadhs/markup-preview/releases/latest][the latest release]] and expand *Assets*. Markup Preview begins at =v0.7.0=;
+earlier versions were named Org Preview.
 Choose the application package below, not GitHub's *Source code* archives.
 
 | Your system              | Download                           |
 |--------------------------+------------------------------------|
-| macOS, Apple Silicon     | org-preview-VERSION-arm64.dmg       |
-| Omarchy / Arch, x86_64    | org-preview-VERSION.tar.gz          |
-| Linux portable alternative | org-preview-VERSION.AppImage     |
+| macOS, Apple Silicon     | markup-preview-VERSION-arm64.dmg       |
+| Omarchy / Arch, x86_64    | markup-preview-VERSION.tar.gz          |
+| Linux portable alternative | markup-preview-VERSION.AppImage     |
 
 =VERSION= means the number on the release page, without the =v= prefix.
 Download the matching =SHA256SUMS-darwin-arm64.txt= or
@@ -161,22 +193,22 @@ Download the matching =SHA256SUMS-darwin-arm64.txt= or
 1. Download the =arm64.dmg= file. In About This Mac, the Chip field should
    name an Apple chip such as M1, M2, M3, or later. Intel Macs have no binary
    in this release.
-2. Quit any running Org Preview copies, including development builds.
-3. Open the DMG and drag *Org Preview.app* into *Applications*. Replace an
+2. Quit any running Markup Preview copies, including development builds.
+3. Open the DMG and drag *Markup Preview.app* into *Applications*. Replace an
    older copy if you are updating. Eject the disk image afterward.
-4. Open *Applications → Org Preview*. Launch the installed copy rather than
+4. Open *Applications → Markup Preview*. Launch the installed copy rather than
    a copy inside Downloads or the mounted disk image.
-5. Click *Open file* or press =⌘O= and choose an =.org= file. You can also drag
-   a file into the app, or use Finder's *Open With → Org Preview*.
+5. Click *Open file* or press =⌘O= and choose an Org or Markdown file. You can also drag
+   a file into the app, or use Finder's *Open With → Markup Preview*.
 
 Mac builds use an ad-hoc signature to seal the app's contents. They are not
 Developer-ID-signed or notarized, so Apple does not automatically trust the
 download. You do not need an Apple Developer Program membership to run it.
-If you trust this repository and macOS says it could not verify Org Preview:
+If you trust this repository and macOS says it could not verify Markup Preview:
 
 1. Try opening the installed app once and click *Done* on the alert.
 2. Open *System Settings → Privacy & Security*.
-3. Find the message about Org Preview and choose *Open Anyway*, then confirm
+3. Find the message about Markup Preview and choose *Open Anyway*, then confirm
    *Open*. Authenticate if macOS asks. This approves this app specifically;
    Gatekeeper remains enabled for other apps.
 
@@ -185,13 +217,13 @@ re-download it and compare its checksum. Report the exact alert if that
 persists or the approval option is unavailable.
 
 Keep one installed copy to avoid ambiguous Finder entries. To make previews
-the default for =.org= files, optionally choose an Org file in Finder, press
-=⌘I=, select Org Preview under *Open with*, and click *Change All*.
+the default for =.org= files, optionally choose an Org or Markdown file in Finder, press
+=⌘I=, select Markup Preview under *Open with*, and click *Change All*.
 
 You can open files from Terminal after installation:
 
 #+begin_src sh
-open -a 'Org Preview' "$HOME/notes/today.org"
+open -a 'Markup Preview' "$HOME/notes/today.org"
 #+end_src
 
 The ZIP is an alternative to the DMG: unzip it and move its app to
@@ -202,62 +234,64 @@ The application was tested on Omarchy 4.0.2 with Hyprland 0.56.2, using
 native Wayland and XWayland. This installation needs no FUSE and no =sudo=.
 There is no AUR or pacman package yet.
 
-Download =org-preview-VERSION.tar.gz= to your Downloads folder. Run the
-following in a terminal. Change =ORG_PREVIEW_VERSION= to match your download;
-=0.1.0= is correct for the first release.
+Download =markup-preview-VERSION.tar.gz= to your Downloads folder. Run the
+following in a terminal. Change =MARKUP_PREVIEW_VERSION= to match your download;
+=0.7.0= is the first Markup Preview release.
 
 #+begin_src sh
-ORG_PREVIEW_VERSION=0.1.0
+MARKUP_PREVIEW_VERSION=0.7.0
 cd "$HOME/Downloads"
 mkdir -p "$HOME/.local/opt" "$HOME/.local/bin"
-tar -xzf "org-preview-$ORG_PREVIEW_VERSION.tar.gz" -C "$HOME/.local/opt"
-ln -sfn "$HOME/.local/opt/org-preview-$ORG_PREVIEW_VERSION/org-preview" "$HOME/.local/bin/org-preview"
-"$HOME/.local/bin/org-preview"
+tar -xzf "markup-preview-$MARKUP_PREVIEW_VERSION.tar.gz" -C "$HOME/.local/opt"
+ln -sfn "$HOME/.local/opt/markup-preview-$MARKUP_PREVIEW_VERSION/markup-preview" "$HOME/.local/bin/markup-preview"
+"$HOME/.local/bin/markup-preview"
 #+end_src
 
 The app opens its welcome document. Click *Open file*, press =Ctrl+O=, or
-drag an =.org= file into the window. To open a file from a terminal:
+drag an Org or Markdown file into the window. To open a file from a terminal:
 
 #+begin_src sh
-"$HOME/.local/bin/org-preview" "$HOME/notes/today.org"
+"$HOME/.local/bin/markup-preview" "$HOME/notes/today.org"
 #+end_src
 
-If =~/.local/bin= is already in your PATH, =org-preview= works as a shorter
+If =~/.local/bin= is already in your PATH, =markup-preview= works as a shorter
 command. The full path above works without changing shell configuration.
 
-*** Add Org Preview to the app launcher
+*** Add Markup Preview to the app launcher
 This optional step creates a user-local desktop entry with the app's icon.
 Set the version to the one you installed, then paste the whole block:
 
 #+begin_src sh
-ORG_PREVIEW_VERSION=0.1.0
+MARKUP_PREVIEW_VERSION=0.7.0
 mkdir -p "$HOME/.local/share/applications"
-cat > "$HOME/.local/share/applications/org-preview.desktop" <<EOF_DESKTOP
+cat > "$HOME/.local/share/applications/markup-preview.desktop" <<EOF_DESKTOP
 [Desktop Entry]
 Type=Application
-Name=Org Preview
-GenericName=Org document viewer
-Comment=Read Org files and follow changes as you save
-Exec="$HOME/.local/bin/org-preview" %f
-Icon=$HOME/.local/opt/org-preview-$ORG_PREVIEW_VERSION/resources/icon.png
+Name=Markup Preview
+GenericName=Markup document viewer
+Comment=Read Org and Markdown files and follow changes as you save
+Exec="$HOME/.local/bin/markup-preview" %f
+Icon=$HOME/.local/opt/markup-preview-$MARKUP_PREVIEW_VERSION/resources/icon.png
 Terminal=false
 Categories=Office;
-MimeType=text/org;text/x-org;
-StartupWMClass=org-preview
-Keywords=org-mode;Emacs;notes;
+MimeType=text/org;text/x-org;text/markdown;text/x-markdown;
+StartupWMClass=markup-preview
+Keywords=org-mode;Markdown;Emacs;notes;
 EOF_DESKTOP
 if command -v update-desktop-database >/dev/null 2>&1; then
   update-desktop-database "$HOME/.local/share/applications"
 fi
 #+end_src
 
-Open Omarchy's app launcher and search for *Org Preview*. The file manager
+Open Omarchy's app launcher and search for *Markup Preview*. The file manager
 can also offer it under *Open With*. Optionally make it the default Org
 viewer after creating the desktop entry:
 
 #+begin_src sh
-xdg-mime default org-preview.desktop text/org
-xdg-mime default org-preview.desktop text/x-org
+xdg-mime default markup-preview.desktop text/org
+xdg-mime default markup-preview.desktop text/x-org
+xdg-mime default markup-preview.desktop text/markdown
+xdg-mime default markup-preview.desktop text/x-markdown
 #+end_src
 
 *** AppImage alternative
@@ -266,10 +300,10 @@ if necessary. The extract-and-run option works without FUSE 2 and was tested
 on Omarchy:
 
 #+begin_src sh
-ORG_PREVIEW_VERSION=0.1.0
+MARKUP_PREVIEW_VERSION=0.7.0
 cd "$HOME/Downloads"
-chmod +x "org-preview-$ORG_PREVIEW_VERSION.AppImage"
-"./org-preview-$ORG_PREVIEW_VERSION.AppImage" --appimage-extract-and-run
+chmod +x "markup-preview-$MARKUP_PREVIEW_VERSION.AppImage"
+"./markup-preview-$MARKUP_PREVIEW_VERSION.AppImage" --appimage-extract-and-run
 #+end_src
 
 If [[https://archlinux.org/packages/extra/x86_64/fuse2/][fuse2]] is installed, you can omit =--appimage-extract-and-run=.
@@ -282,9 +316,9 @@ user-local installation with a desktop entry.
 Both backends were tested. If you need to select one explicitly:
 
 #+begin_src sh
-"$HOME/.local/bin/org-preview" --ozone-platform=wayland "$HOME/notes/today.org"
+"$HOME/.local/bin/markup-preview" --ozone-platform=wayland "$HOME/notes/today.org"
 # Alternatively, through XWayland:
-"$HOME/.local/bin/org-preview" --ozone-platform=x11 "$HOME/notes/today.org"
+"$HOME/.local/bin/markup-preview" --ozone-platform=x11 "$HOME/notes/today.org"
 #+end_src
 
 Run the app as your normal desktop user. Sandboxing stays enabled.
@@ -292,77 +326,75 @@ Run the app as your normal desktop user. Sandboxing stays enabled.
 ** Verify a download
 Run the appropriate command in Downloads and compare its hash with the
 same filename in the downloaded =SHA256SUMS-*.txt= file. These examples use
-the first release; change the version for a later download.
+v0.7.0; change the version for a later download.
 
 #+begin_src sh
 # macOS:
 cd "$HOME/Downloads"
-shasum -a 256 'org-preview-0.1.0-arm64.dmg'
+shasum -a 256 'markup-preview-0.7.0-arm64.dmg'
 
 # Omarchy / Linux:
 cd "$HOME/Downloads"
-sha256sum org-preview-0.1.0.tar.gz
+sha256sum markup-preview-0.7.0.tar.gz
 #+end_src
 
 ** Start using it
-Open a notebook in Org Preview and the same file in your editor. Save a
+Open a notebook in Markup Preview and the same file in your editor. Save a
 change in the editor; the preview updates automatically. Search with
 =⌘F= / =Ctrl+F= and switch to read-only source with =⌘⇧S= / =Ctrl+Shift+S=.
 Your files stay local. Opening a preview does not modify the document.
+
+** Replacing Org Preview with Markup Preview
+v0.7.0 uses a new application ID, command name, and settings namespace.
+Appearance starts at its defaults. No settings are migrated, and the old
+application and its settings are left untouched.
+
+On macOS, quit Org Preview, install Markup Preview.app, and remove the old
+Org Preview.app manually to avoid duplicate Open With entries. Select Markup
+Preview again for any default file associations you want to use.
+
+On Linux, install the new package and launcher below the =markup-preview=
+name. Remove the obsolete =~/.local/bin/org-preview= symlink and
+=~/.local/share/applications/org-preview.desktop= launcher manually after
+checking that the new app opens your files. Old extracted packages can also
+be removed when no longer needed. Documents are independent of the app.
 
 ** Update to a later version
 There is no in-app updater yet. Download the new release and quit the old
 app first. On macOS, replace the Applications copy. On Omarchy, rerun the
 tar installation and desktop-entry blocks with the new version; they update
-the command link and icon path. Your Org files are independent of the app.
+the command link and icon path. Your documents are independent of the app.
 
-On Wayland, Org Preview avoids Chromium's incompatible Vulkan startup paths
+On Wayland, Markup Preview avoids Chromium's incompatible Vulkan startup paths
 and uses OpenGL acceleration. No extra launcher flags are needed. An explicit
 =--ozone-platform=x11= launch keeps the default X11 graphics configuration.
 
 * Why
-Org files are comfortable to write and read as plain text. They deserve a
-standalone reader that renders them well, too.
+Markup Preview began as Org Preview, a standalone reader for Org-mode files.
+v0.7.0 adds Markdown while retaining the Org heading icon as a nod to those
+origins. The icon artwork and all generated icon files are unchanged.
 
-org-preview will be a free, open-source desktop app for opening =.org= files
-and watching the preview update as you save changes in your favorite editor.
-It takes inspiration from [[https://markdownpreview.app][Markdown Preview]], with Org syntax and equal attention
-to macOS and Linux, including Omarchy.
-
-* Goal
-Open a file, read it, and keep writing in the editor you already use. No
-account, cloud service, or Emacs installation should be required.
-
-* Scope for v0.1
-- Open local =.org= files through a file picker, drag and drop, or the command line.
-- Refresh the document after external saves, including atomic file replacement.
-- Render headings, emphasis, links, lists, checkboxes, tables, and source blocks.
-- Show an outline, TODO states, tags, and document metadata.
-- Provide search, a read-only source view, and light and dark themes.
-- Keep document content local and never execute Babel blocks or embedded HTML.
-- Provide a repeatable build for macOS and Linux.
+Keep writing in your editor. Open the file here to read it, follow its outline,
+and see saves immediately. No account, cloud service, or Emacs installation
+is needed. The app takes inspiration from [[https://markdownpreview.app][Markdown Preview]].
 
 * Approach
-Use Electron for the desktop shell and Orga for parsing Org syntax. A
-sandboxed renderer displays sanitized HTML. The first prototype favors a
-working file-to-preview loop over complete Org export compatibility.
-Vite bundles renderer dependencies into =dist/=. Packaged apps omit the raw
-=node_modules= tree; the main process uses Electron, Node built-ins, and local
-modules only. Bundled dependency licenses remain in =THIRD-PARTY-NOTICES.org=.
+Electron provides the desktop shell. Orga parses Org syntax, and
+=mdast-util-from-markdown= with GFM extensions parses Markdown. Explicit HTML
+renderers share the reading interface, syntax highlighting, and resource
+presentation. DOMPurify sanitizes the output in a sandboxed renderer.
 
-* Outside the first release
-- An editor, agenda, task manager, or replacement for Emacs.
-- Babel execution, remote includes, or cloud synchronization.
-- Full Org export parity, LaTeX rendering, and diagram engines.
-- Finder Quick Look, Developer ID signing/notarization, automatic updates,
-  and an AUR package.
+Electron verifies images, Mermaid blocks, and local links against parsed
+nodes in the active source revision. The parsing module is bundled separately
+for Node so packaged apps require no external =node_modules= tree.
+Dependencies retain their licenses in =THIRD-PARTY-NOTICES.org=.
 
 * Run from source
 Use Node.js 24 LTS and npm. No Emacs installation is needed.
 
 #+begin_src sh
-git clone https://github.com/chadhs/org-preview.git
-cd org-preview
+git clone https://github.com/chadhs/markup-preview.git
+cd markup-preview
 npm ci
 npm run dev
 #+end_src
@@ -381,8 +413,8 @@ npm start -- ~/notes/today.org
 
 Open files with the toolbar, drag and drop, or =Cmd/Ctrl+O=. Save in your
 editor to refresh the preview. The app polls the open file every 300 ms and
-keeps watching after atomic saves or deletion and recreation. It opens one
-file at a time and supports UTF-8 files up to 16 MiB. Large documents can take
+keeps watching after atomic saves or deletion and recreation. It opens up to 20
+files at a time and supports UTF-8 files up to 16 MiB each, with a 64 MiB total. Large documents can take
 longer to render, depending on their structure.
 
 Use =Cmd/Ctrl+F= to search. Enter advances to the next match and Shift+Enter
@@ -405,11 +437,11 @@ npm run checksums  # SHA-256 sums for the packages in release/
 macOS builds are ad-hoc signed. CI verifies the signatures inside both ZIP
 and DMG packages. Developer ID signing and notarization are still needed
 for downloads that macOS trusts automatically. The app declares itself as
-an Org file viewer so installed builds can appear in Open With.
+an Org or Markdown file viewer so installed builds can appear in Open With.
 
 * Automatic releases
 Every push to =main=, including merge, squash, and rebase merges, starts a
-minor release. Documentation-only merges also release. The first version is
+minor release. Documentation-only merges also release. The original first version was
 =0.1.0=; subsequent versions increment the highest stable tag's minor number
 and reset its patch number, for example =0.2.0= and =0.3.0=.
 
@@ -437,7 +469,9 @@ uploads six assets to a draft, then publishes after every upload succeeds.
 The tagged commit has the merged main commit as its parent. It updates only
 the package versions, so checking out a tag reproduces the released version.
 The workflow never pushes a version-bump commit back to =main= or triggers
-a release loop. Main's package version is the development baseline.
+a release loop. Main's package version is the development baseline, currently =0.7.0=.
+New release source commits use =Markup-Preview-Source:= markers; historical
+=Org-Preview-Source:= markers remain recognized for retry detection.
 
 If a run fails, fix the cause and rerun it in Actions. A retry reuses any tag
 already assigned to that source commit and completes a partial draft.
@@ -446,7 +480,7 @@ will not replace a newer release as GitHub's latest release. Failed builds
 publish nothing. Generated release notes list changes since the previous tag
 and include version-specific installation instructions and known limits.
 
-* What v0.1 renders
+* Org rendering
 - Document title, subtitle, author, headings, and outline navigation.
 - TODO and DONE states, priorities, tags, planning lines, and folded drawers.
 - Bold, italic, underline, strike-through, code, and verbatim text.
@@ -459,7 +493,7 @@ Emacs's exporter. Custom TODO workflows, footnotes, inline math, timestamps,
 macros, export options, and complex Org constructs may display literally or
 incompletely. Source view always shows the original file.
 
-Local image links display inline. Links to other local files are not opened.
+Local image links display inline. Links to supported local documents open in tabs.
 Raw export blocks display as text. Babel, includes, embedded HTML, and
 custom URL handlers never execute. Documents cannot fetch network resources.
 Clicking a web link opens your browser. No telemetry or cloud services.
@@ -496,7 +530,7 @@ search, and outline, and rejects the Wayland Vulkan warning in startup logs.
 Screenshots are saved in =test-results/=.
 
 The smoke test uses a disposable profile. To test a packaged executable, set
-=ORG_PREVIEW_EXECUTABLE= to its absolute path and run =node scripts/smoke.mjs=.
+=MARKUP_PREVIEW_EXECUTABLE= to its absolute path and run =node scripts/smoke.mjs=.
 On macOS it also checks Finder-style file events and the native Open command
 after the last window closes. CI runs this suite against the macOS ZIP artifact.
 Native Mac checks covered file picking, Finder opening and dragging, browser

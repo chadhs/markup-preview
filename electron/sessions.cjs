@@ -18,35 +18,36 @@ function createSessions({ read = readDocument, watch = watchDocument, canonicali
       id: doc.id, path: doc.path, name: doc.name, revision: doc.revision, error,
     })), ...(includeDocument ? { document: active()?.doc ?? null } : {}) };
   }
-  function publish(includeDocument = true, openError = '') {
+  function publish(includeDocument = true, openError = '', navigation = null) {
     sequence++;
-    const state = { ...snapshot(includeDocument), openError };
+    const state = { ...snapshot(includeDocument), openError, navigation };
     changed(state);
     return state;
   }
-  function activate(id) {
+  function activate(id, fragment = null) {
     if (!documents.has(id)) throw new Error('This document is no longer open.');
     const switching = activeId !== id;
     if (switching && active()) active().reader = undefined;
     activeId = id;
-    return publish(switching);
+    return publish(switching, '', fragment ? { documentId: id, fragment } : null);
   }
-  function openMany(paths) {
+  function openMany(paths, { fragment = null, isCurrent = () => true } = {}) {
     if (!Array.isArray(paths) || !paths.length || paths.length > 100 || paths.some((p) => typeof p !== 'string')) {
-      return Promise.reject(new Error('Choose between 1 and 100 Org files.'));
+      return Promise.reject(new Error('Choose between 1 and 100 Org or Markdown files.'));
     }
     const epoch = generation;
     const work = async () => {
       const errors = [];
+      if (!isCurrent()) return snapshot();
       for (const file of paths) {
         if (epoch !== generation) break;
         try {
           // Validate extension and contents before canonicalizing the identity.
           const doc = await read(file);
           const identity = await canonicalize(doc.path);
-          if (epoch !== generation) break;
+          if (epoch !== generation || !isCurrent()) break;
           const existing = [...documents.values()].find((entry) => entry.identity === identity);
-          if (existing) { activate(existing.doc.id); continue; }
+          if (existing) { activate(existing.doc.id, fragment); continue; }
           if (documents.size >= MAX_TABS) throw new Error(`Up to ${MAX_TABS} documents can be open. Close a tab first.`);
           if (size() + doc.size > MAX_SESSION_BYTES) throw new Error('Open documents are limited to 64 MiB in total. Close a tab first.');
           const id = `document-${++nextId}`;
@@ -69,7 +70,7 @@ function createSessions({ read = readDocument, watch = watchDocument, canonicali
             publish(false);
           });
           recent(doc.path);
-          activate(id);
+          activate(id, fragment);
         } catch (error) { errors.push(`${file}: ${message(error)}`); }
       }
       if (epoch !== generation) return snapshot();

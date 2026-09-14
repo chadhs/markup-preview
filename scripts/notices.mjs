@@ -1,7 +1,7 @@
 import { readFile, writeFile, readdir, access } from 'node:fs/promises';
 import path from 'node:path';
 const seen = new Set();
-let output = `#+title: Third-party notices\n\norg-preview's own code uses BSD-3-Clause. Dependencies retain their licenses.\nDOMPurify is used under its Apache-2.0 option. Electron's distribution also\nincludes LICENSE and LICENSES.chromium.html for its bundled components.\n\nRegenerate this file with =npm run notices= after dependency updates.\n`;
+let output = `#+title: Third-party notices\n\nmarkup-preview's own code uses BSD-3-Clause. Dependencies retain their licenses.\nDOMPurify is used under its Apache-2.0 option. Electron's distribution also\nincludes LICENSE and LICENSES.chromium.html for its bundled components.\n\nRegenerate this file with =npm run notices= after dependency updates.\n`;
 async function visit(name, from = process.cwd()) {
   let parent = path.resolve(from), directory;
   while (true) {

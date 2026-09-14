@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
-    <title>Org Preview</title>
+    <title>Markup Preview</title>
   </head>
   <body>
     <div id="app">
       <header class="toolbar" aria-label="Window toolbar">
         <div class="titlebar-content">
-        <div class="brand"><img class="brand-icon" src="/assets/icon.svg" alt="" draggable="false"><span class="brand-name">Org Preview</span><span class="version" aria-label="App version"></span></div>
+        <div class="brand"><img class="brand-icon" src="/assets/icon.svg" alt="" draggable="false"><span class="brand-name">Markup Preview</span><span class="version" aria-label="App version"></span></div>
         <div class="toolbar-actions">
           <button id="toggle-outline" class="icon-button" aria-label="Toggle outline" title="Toggle outline"><svg viewBox="0 0 20 20"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M8 4v12"/></svg></button>
           <div class="segmented" aria-label="Document view"><button id="preview-tab" aria-pressed="true">Preview</button><button id="source-tab" aria-pressed="false">Source</button></div>
@@ -43,18 +43,18 @@
           <div class="sidebar-bottom"><span class="live-dot"></span><span>Watching for changes<small>Save in your editor. Read here.</small></span></div>
         </aside>
         <main id="reader" role="tabpanel" tabindex="0" aria-label="Document preview">
-          <div id="empty-state" hidden><h1>Open an Org document</h1><p>Choose files or drop them here. Keep editing in your favorite editor.</p><button id="empty-open" class="primary">Open files</button></div>
+          <div id="empty-state" hidden><h1>Open an Org or Markdown document</h1><p>Choose files or drop them here. Keep editing in your favorite editor.</p><button id="empty-open" class="primary">Open files</button></div>
           <div class="page-top"><span id="breadcrumb">welcome.org</span><span id="mode-label">ORG DOCUMENT</span></div>
           <article id="document">
-            <header class="document-header"><div class="eyebrow">ORG PREVIEW</div><h1 id="document-title">Your words, in Org.</h1><p id="subtitle"></p><div id="metadata"></div></header>
+            <header class="document-header"><div class="eyebrow">MARKUP PREVIEW</div><h1 id="document-title">Your words, in markup.</h1><p id="subtitle"></p><div id="metadata"></div></header>
             <div id="content"></div>
             <div class="document-end"><span>*</span><span>End of document</span></div>
           </article>
           <pre id="source" tabindex="0" hidden></pre>
         </main>
       </div>
-      <footer class="statusbar"><span id="status" role="status"><span class="live-dot"></span>Opening document…</span><span id="stats"></span><span class="status-right">UTF-8 <span class="status-divider">/</span> Org mode</span></footer>
-      <div id="drop-overlay" hidden><img class="brand-icon" src="/assets/icon.svg" alt=""><h2>Drop your .org files</h2><p>Keep writing in your favorite editor.</p></div>
+      <footer class="statusbar"><span id="status" role="status"><span class="live-dot"></span>Opening document…</span><span id="stats"></span><span class="status-right">UTF-8 <span class="status-divider">/</span> <span id="format-label">Org mode</span></span></footer>
+      <div id="drop-overlay" hidden><img class="brand-icon" src="/assets/icon.svg" alt=""><h2>Drop your Org or Markdown files</h2><p>Keep writing in your favorite editor.</p></div>
     </div>
     <script type="module" src="/src/app.js"></script>
   </body>

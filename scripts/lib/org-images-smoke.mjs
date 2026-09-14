@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { setAppearance } from './appearance-smoke.mjs';
 
-export async function checkImages(window, directory, prefix) {
+export async function checkOrgImages(window, directory, prefix) {
   const folder = path.join(directory, 'images café 日本語');
   await mkdir(folder);
   const formats = await window.evaluate(() => {
@@ -50,7 +50,7 @@ Images fit the reading column and keep their original proportions.
   const onRequest = (request) => { if (/^https?:/.test(request.url())) remoteRequests.push(request.url()); };
   window.on('request', onRequest);
   try {
-    await window.evaluate((file) => window.orgPreview.openPath(file), file);
+    await window.evaluate((file) => window.markupPreview.openPath(file), file);
     await expect(window.locator('#document-title')).toHaveText('Image previews');
     await expect(window.locator('.image-preview[data-loaded="true"]')).toHaveCount(5);
     await expect(window.locator('.image-preview[data-loaded="false"]')).toHaveCount(2);
@@ -79,18 +79,18 @@ Images fit the reading column and keep their original proportions.
     await expect(window.locator('#content')).toContainText('Saved again.');
     await expect(window.locator('.image-preview[data-loaded="true"]')).toHaveCount(5);
     expect(await window.locator('[data-image-id="1"] img').evaluate((image) => image.naturalWidth)).toBe(640);
-    const rejected = await window.evaluate((file) => window.orgPreview.image(file, { start: 0, end: 10, reference: '[[file:secret.png]]' }), file);
+    const rejected = await window.evaluate((file) => window.markupPreview.image(file, { start: 0, end: 10, reference: '[[file:secret.png]]' }), file);
     expect(rejected.error).toBeTruthy();
     await expect(window.locator('#error')).toBeHidden();
     const next = path.join(directory, 'without-images.org');
     await writeFile(next, '#+title: Without images\nOnly text.');
     await window.evaluate(async ([file, next]) => {
-      await window.orgPreview.openPath(file);
-      await window.orgPreview.openPath(next);
+      await window.markupPreview.openPath(file);
+      await window.markupPreview.openPath(next);
     }, [file, next]);
     await expect(window.locator('#document-title')).toHaveText('Without images');
     await expect(window.locator('#content img, .image-preview')).toHaveCount(0);
-    const stale = await window.evaluate((file) => window.orgPreview.image(file, {}), file);
+    const stale = await window.evaluate((file) => window.markupPreview.image(file, {}), file);
     expect(stale.error).toBeTruthy();
     expect(remoteRequests).toEqual([]);
   } finally { window.off('request', onRequest); }

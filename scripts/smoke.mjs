@@ -6,15 +6,17 @@ import { spawn } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { checkTitlebar } from './lib/titlebar-smoke.mjs';
 import { checkAppearance, setAppearance, captureAppearances } from './lib/appearance-smoke.mjs';
-import { checkHighlighting } from './lib/highlight-smoke.mjs';
-import { checkTabsAndDiagrams } from './lib/tabs-diagrams-smoke.mjs';
-import { checkImages } from './lib/images-smoke.mjs';
+import { checkOrgHighlighting } from './lib/org-highlight-smoke.mjs';
+import { checkTabsAndOrgDiagrams } from './lib/tabs-org-diagrams-smoke.mjs';
+import { checkMarkdown } from './lib/markdown-smoke.mjs';
+import { checkHugoMetadata } from './lib/hugo-smoke.mjs';
+import { checkOrgImages } from './lib/org-images-smoke.mjs';
 
-const directory = await mkdtemp(path.join(tmpdir(), 'org-preview-smoke-'));
+const directory = await mkdtemp(path.join(tmpdir(), 'markup-preview-smoke-'));
 const file = path.join(directory, 'smoke café 日本語.org');
 await writeFile(file, '#+title: Desktop smoke test\n* TODO A heading :test:\nRead *this* in Org.\n- [X] Working\n\n#+begin_export html\n<img src=x onerror="window.compromised=true">\n#+end_export');
 await writeFile(path.join(directory, 'links.org'), '#+title: Links\n* Supported\n[[http://example.com][HTTP]] [[https://example.com][HTTPS]] [[mailto:reader@example.invalid][Mail]]');
-const executablePath = process.env.ORG_PREVIEW_EXECUTABLE;
+const executablePath = process.env.MARKUP_PREVIEW_EXECUTABLE;
 const appArgs = executablePath ? [] : ['.'];
 const profileArg = `--user-data-dir=${path.join(directory, 'profile')}`;
 let app;
@@ -109,7 +111,7 @@ try {
   }
   expect(await app.evaluate(() => globalThis.openedLinks)).toEqual(['http://example.com/', 'https://example.com/', 'mailto:reader@example.invalid']);
   await drop(unsupported);
-  await expect(window.locator('#error')).toContainText('Choose an .org file.');
+  await expect(window.locator('#error')).toContainText('Choose an .org, .md, or .markdown file.');
   await drop(oversized);
   await expect(window.locator('#error')).toContainText('up to 16 MiB');
   await drop(file);
@@ -145,7 +147,7 @@ try {
     child.once('error', reject);
     child.once('exit', (code) => code === 0 ? resolve() : reject(new Error(`Second instance exited ${code}`)));
   });
-  await expect(window.locator('#error')).toContainText('Choose an .org file.');
+  await expect(window.locator('#error')).toContainText('Choose an .org, .md, or .markdown file.');
   // Desktop launchers can pass file:// URLs, including encoded spaces/Unicode.
   const uriChild = spawn(app.process().spawnfile, [...appArgs, pathToFileURL(path.join(directory, 'links.org')).href, profileArg], { env, stdio: 'ignore' });
   await new Promise((resolve, reject) => {
@@ -154,9 +156,11 @@ try {
   });
   await expect(window.locator('#document-title')).toHaveText('Links');
   await expect(window.locator('#error')).toBeHidden();
-  await checkHighlighting(window, directory, executablePath ? 'packaged' : 'desktop');
-  await checkImages(window, directory, executablePath ? 'packaged' : 'desktop');
-  await checkTabsAndDiagrams(app, window, directory, executablePath ? 'packaged' : 'desktop');
+  await checkOrgHighlighting(window, directory, executablePath ? 'packaged' : 'desktop');
+  await checkOrgImages(window, directory, executablePath ? 'packaged' : 'desktop');
+  await checkTabsAndOrgDiagrams(app, window, directory, executablePath ? 'packaged' : 'desktop');
+  await checkMarkdown(app, window, directory, executablePath ? 'packaged' : 'desktop', appArgs, profileArg, env);
+  await checkHugoMetadata(window, directory, executablePath ? 'packaged' : 'desktop');
   // Exercise the same picker path used by the Open button without a native dialog.
   await app.evaluate(({ dialog }, welcome) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [welcome] }); }, path.resolve('examples/welcome.org'));
   await window.locator('#open').click();
@@ -207,7 +211,7 @@ try {
   }
   await setAppearance(window, { mode: 'system' });
   await expect(window.locator('#appearance-mode')).toHaveValue('system');
-  expect(await window.evaluate(() => localStorage.getItem('org-preview-theme'))).toBe('system');
+  expect(await window.evaluate(() => localStorage.getItem('markup-preview-theme'))).toBe('system');
   await app.close();
   app = await electron.launch({ executablePath, args: [...appArgs, file, path.join(directory, 'links.org'), profileArg, ...process.argv.slice(2)], env, chromiumSandbox: true });
   app.process().stderr.on('data', (chunk) => { stderr += chunk; });
@@ -215,7 +219,7 @@ try {
   window.on('pageerror', (error) => errors.push(error.message));
   await expect(window.locator('#document-title')).toHaveText('Links');
   await expect(window.locator('#document-tabs [role=tab]')).toHaveCount(2);
-  await window.evaluate((file) => window.orgPreview.openPath(file), file);
+  await window.evaluate((file) => window.markupPreview.openPath(file), file);
   await expect(window.locator('#document-title')).toHaveText('Old file must stay detached');
   await expect(window.locator('#appearance-mode')).toHaveValue('system');
   await expect(window.locator('#light-theme')).toHaveValue('solarized-light');

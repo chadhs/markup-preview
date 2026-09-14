@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { renderOrg, escapeHtml } from '../src/org.js';
+import { renderOrg } from '../src/org.js';
+import { escapeHtml } from '../src/html.js';
 import { createCodeHighlighter, MAX_HIGHLIGHT_BLOCK_LENGTH, MAX_HIGHLIGHT_DOCUMENT_LENGTH } from '../src/highlight.js';
 
 test('Org source languages and aliases produce token markup without changing code text', () => {

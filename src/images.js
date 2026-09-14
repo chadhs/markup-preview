@@ -10,7 +10,7 @@ export async function loadImages(container, references, documentPath, readImage,
       if (result.error) throw new Error(result.error);
       if (!/^data:image\/(?:png|jpeg|gif|webp|svg\+xml);base64,/.test(result.dataUrl)) throw new Error('Invalid image data.');
       const image = new Image();
-      image.alt = reference.label.replace(/^.*\//, '');
+      image.alt = reference.alt ?? reference.label.replace(/^.*\//, '');
       image.title = reference.label;
       image.decoding = 'async';
       image.src = result.dataUrl;

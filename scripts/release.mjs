@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { readFile, appendFile } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import path from 'node:path';
-import { planRelease, stampVersion, verifyAssets, assertMainRelease, releaseNotes, uploadAndPublish, findRelease } from './lib/releases.mjs';
+import { planRelease, releaseSource, stampVersion, verifyAssets, assertMainRelease, releaseNotes, uploadAndPublish, findRelease } from './lib/releases.mjs';
 
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
 const command = process.argv[2];
@@ -39,9 +39,8 @@ if (command === 'stamp') {
   };
   const tags = git('tag', '--list', 'v*').split('\n').filter(Boolean).map((tag) => {
     const commit = git('rev-parse', `${tag}^{commit}`);
-    const marker = /^Org-Preview-Source: ([a-f0-9]{40})$/m.exec(git('show', '-s', '--format=%B', commit))?.[1];
     const parents = git('rev-list', '--parents', '-n', '1', commit).split(' ').slice(1);
-    return { tag, source: marker && parents.length === 1 && parents[0] === marker ? marker : commit };
+    return { tag, source: releaseSource(commit, git('show', '-s', '--format=%B', commit), parents) };
   });
   const initial = JSON.parse(await readFile('package.json', 'utf8')).version;
   const plan = planRelease(initial, tags, source);
@@ -64,14 +63,14 @@ if (command === 'stamp') {
       git('diff', '--cached', '--exit-code');
       await stampVersion(process.cwd(), plan.version);
       git('add', 'package.json', 'package-lock.json');
-      git('-c', 'user.name=github-actions[bot]', '-c', 'user.email=41898282+github-actions[bot]@users.noreply.github.com', 'commit', '--allow-empty', '-m', `Release ${plan.tag}`, '-m', `Org-Preview-Source: ${source}`);
+      git('-c', 'user.name=github-actions[bot]', '-c', 'user.email=41898282+github-actions[bot]@users.noreply.github.com', 'commit', '--allow-empty', '-m', `Release ${plan.tag}`, '-m', `Markup-Preview-Source: ${source}`);
       commit = git('rev-parse', 'HEAD');
       git('push', 'origin', `${commit}:refs/tags/${plan.tag}`);
     }
     const existing = await findRelease(github, plan.tag);
     if (existing && !existing.draft) console.log(`Already published: ${existing.html_url}`);
     else {
-      const generated = plan.previous ? await github.request('POST', '/releases/generate-notes', { tag_name: plan.tag, target_commitish: commit, previous_tag_name: plan.previous }) : { body: '### Changes\n\nFirst public release of Org Preview.' };
+      const generated = plan.previous ? await github.request('POST', '/releases/generate-notes', { tag_name: plan.tag, target_commitish: commit, previous_tag_name: plan.previous }) : { body: '### Changes\n\nFirst public release of Markup Preview.' };
       const release = await uploadAndPublish(github, plan, assets, releaseNotes({ version: plan.version, repository, source, changes: generated.body }));
       console.log(release.html_url);
       if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, `Published [${plan.tag}](${release.html_url}) from ${source}.\n`);

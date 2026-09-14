@@ -13,6 +13,10 @@ export function compareVersions(a, b) {
   for (let index = 0; index < 3; index++) if (left[index] !== right[index]) return left[index] - right[index];
   return 0;
 }
+export function releaseSource(commit, message, parents) {
+  const marker = /^(?:Org|Markup)-Preview-Source: ([a-f0-9]{40})$/m.exec(message)?.[1];
+  return marker && parents.length === 1 && parents[0] === marker ? marker : commit;
+}
 export function planRelease(initial, tags, source) {
   parseVersion(initial);
   if (!/^[a-f0-9]{40}$/.test(source)) throw new Error('A full source commit SHA is required.');
@@ -47,8 +51,8 @@ export async function stampVersion(directory, version) {
 export function assetNames(version) {
   parseVersion(version);
   return [
-    `org-preview-${version}-arm64.dmg`, `org-preview-${version}-arm64.zip`,
-    `org-preview-${version}.AppImage`, `org-preview-${version}.tar.gz`,
+    `markup-preview-${version}-arm64.dmg`, `markup-preview-${version}-arm64.zip`,
+    `markup-preview-${version}.AppImage`, `markup-preview-${version}.tar.gz`,
     'SHA256SUMS-darwin-arm64.txt', 'SHA256SUMS-linux-x64.txt',
   ];
 }
@@ -89,41 +93,43 @@ export function releaseNotes({ version, repository, source, changes = '' }) {
   parseVersion(version);
   const guide = `https://github.com/${repository}/blob/v${version}/README.org#install`;
   return [
-    'Org Preview is a live reader for local Org-mode files. Keep writing in your editor and the preview follows your saves. Downloaded releases need no Node.js, npm, or Emacs.',
+    'Markup Preview is a live reader for local Org-mode and Markdown files. Keep writing in your editor and the preview follows your saves. Downloaded releases need no Node.js, npm, or Emacs.',
     '',
-    'Includes document tabs, offline Mermaid diagrams, local images, an outline, search, source view, themes, zoom, and common Org formatting. Documents stay local; embedded HTML and Babel blocks never execute. BSD-3-Clause, with the MIT-licensed Orga parser.',
+    'Includes document tabs, offline Mermaid diagrams, local images, an outline, search, source view, themes, zoom, and Org and GitHub-style Markdown formatting. Local document links open in tabs, including heading targets. Hugo metadata displays from Org headers and Markdown YAML/TOML front matter, with a Draft badge only when true. Documents stay local; embedded HTML and Babel blocks never execute. BSD-3-Clause, with the MIT-licensed Orga parser.',
+    '',
+    'Markup Preview v0.7.0 replaces the Org Preview name and keeps its original icon. This is a fresh application identity with default preferences. Remove the old app or Linux launcher manually after installing; existing settings are not migrated.',
     '',
     '### macOS: Apple Silicon',
     '',
-    `1. Download \`org-preview-${version}-arm64.dmg\` and \`SHA256SUMS-darwin-arm64.txt\` from Assets below. The ZIP is an alternative; GitHub's Source code archives are not installers.`,
-    '2. Quit older copies. Open the DMG, drag Org Preview.app into Applications, and eject the disk image.',
+    `1. Download \`markup-preview-${version}-arm64.dmg\` and \`SHA256SUMS-darwin-arm64.txt\` from Assets below. The ZIP is an alternative; GitHub's Source code archives are not installers.`,
+    '2. Quit older copies. Open the DMG, drag Markup Preview.app into Applications, and eject the disk image.',
     '3. Launch the Applications copy. If macOS cannot verify the developer and you trust this repository, first try opening the app, then use System Settings → Privacy & Security → Open Anyway and confirm Open. These builds are ad-hoc signed for bundle integrity, but not Developer-ID-signed or notarized. Click Done on the initial alert, then approve this app specifically; no paid Apple Developer membership is needed to run it.',
-    '4. Click Open file, press ⌘O, drag in an Org file, or use Finder → Open With → Org Preview. Keep one installed copy.',
+    '4. Click Open file, press ⌘O, drag in an Org or Markdown file, or use Finder → Open With → Markup Preview. Keep one installed copy.',
     '',
     '[Apple first-launch guidance](https://support.apple.com/en-us/102445). If the app is reported as damaged, re-download and verify its checksum; report the exact alert if it persists.',
     '',
     '### Omarchy / Arch Linux: x86_64',
     '',
-    `Download \`org-preview-${version}.tar.gz\` and \`SHA256SUMS-linux-x64.txt\` to Downloads. This tested installation uses your home directory and needs no FUSE or sudo:`,
+    `Download \`markup-preview-${version}.tar.gz\` and \`SHA256SUMS-linux-x64.txt\` to Downloads. This tested installation uses your home directory and needs no FUSE or sudo:`,
     '',
     '```sh',
-    `ORG_PREVIEW_VERSION=${version}`,
+    `MARKUP_PREVIEW_VERSION=${version}`,
     'cd "$HOME/Downloads"',
     'mkdir -p "$HOME/.local/opt" "$HOME/.local/bin"',
-    'tar -xzf "org-preview-$ORG_PREVIEW_VERSION.tar.gz" -C "$HOME/.local/opt"',
-    'ln -sfn "$HOME/.local/opt/org-preview-$ORG_PREVIEW_VERSION/org-preview" "$HOME/.local/bin/org-preview"',
-    '"$HOME/.local/bin/org-preview"',
+    'tar -xzf "markup-preview-$MARKUP_PREVIEW_VERSION.tar.gz" -C "$HOME/.local/opt"',
+    'ln -sfn "$HOME/.local/opt/markup-preview-$MARKUP_PREVIEW_VERSION/markup-preview" "$HOME/.local/bin/markup-preview"',
+    '"$HOME/.local/bin/markup-preview"',
     '```',
     '',
-    `Use Open file, Ctrl+O, or drag-and-drop. Open notebooks from the terminal with \`~/.local/bin/org-preview ~/notes/today.org\`. The [installation guide](${guide}) includes an optional app-launcher entry, default file associations, and update instructions. No AUR/pacman package is supplied.`,
+    `Use Open file, Ctrl+O, or drag-and-drop. Open notebooks from the terminal with \`~/.local/bin/markup-preview ~/notes/today.org\`. The [installation guide](${guide}) includes an optional app-launcher entry, default file associations, and update instructions. No AUR/pacman package is supplied.`,
     '',
-    `Alternatively download \`org-preview-${version}.AppImage\`, make it executable, and run it with \`--appimage-extract-and-run\` when FUSE 2 is absent. Native Wayland and XWayland were tested on Omarchy. Run as your normal user with sandboxing enabled.`,
+    `Alternatively download \`markup-preview-${version}.AppImage\`, make it executable, and run it with \`--appimage-extract-and-run\` when FUSE 2 is absent. Native Wayland and XWayland were tested on Omarchy. Run as your normal user with sandboxing enabled.`,
     '',
     'Compare downloads with the supplied SHA-256 files using `shasum -a 256` on macOS or `sha256sum` on Linux. To update, quit the app and repeat installation for the new version; there is no in-app updater.',
     '',
     '### Known limits',
     '',
-    'Up to 20 UTF-8 documents, 16 MiB per file and 64 MiB of source files total. Tabs do not persist after quitting. Mermaid rendering has input, output, and time limits; document configuration and remote assets are unsupported. Editing, full Emacs export parity, links to other local files, math, other diagram engines, Babel, Quick Look, Developer ID signing/notarization, and auto-updates remain outside scope. Intel Mac builds are not supplied.',
+    'Up to 20 UTF-8 documents, 16 MiB per file and 64 MiB of source files total. Tabs do not persist after quitting. Mermaid rendering has input, output, and time limits; document configuration and remote assets are unsupported. Editing, full Emacs export parity, unsupported local file types, math, other diagram engines, Babel, Quick Look, Developer ID signing/notarization, and auto-updates remain outside scope. Intel Mac builds are not supplied.',
     '',
     `[Release information](https://github.com/${repository}/blob/v${version}/RELEASE-NOTES.org) · [Merged source](https://github.com/${repository}/commit/${source})`,
     '',
@@ -147,9 +153,9 @@ export async function findRelease(github, tag) {
 export async function uploadAndPublish(github, plan, assets, body) {
   let release = await findRelease(github, plan.tag);
   if (release && !release.draft) return release;
-  if (!release) release = await github.request('POST', '/releases', { tag_name: plan.tag, name: `Org Preview ${plan.tag}`, body, draft: true, prerelease: false });
+  if (!release) release = await github.request('POST', '/releases', { tag_name: plan.tag, name: `Markup Preview ${plan.tag}`, body, draft: true, prerelease: false });
   else {
-    await github.request('PATCH', `/releases/${release.id}`, { name: `Org Preview ${plan.tag}`, body });
+    await github.request('PATCH', `/releases/${release.id}`, { name: `Markup Preview ${plan.tag}`, body });
     for (const asset of release.assets) await github.request('DELETE', `/releases/assets/${asset.id}`);
   }
   for (const asset of assets) {

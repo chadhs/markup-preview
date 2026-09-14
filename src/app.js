@@ -1,20 +1,23 @@
 import DOMPurify from 'dompurify';
 import { version as appVersion } from '../package.json';
-import { renderOrg } from './org.js';
+import { renderDocument, resolveAnchor } from './documents.js';
 import './style.css';
 import { createSearch } from './search.js';
 import { initializeAppearance } from './appearance.js';
 import { loadImages } from './images.js';
 import { loadDiagrams } from './diagrams.js';
 import { tabLabel } from './tabs.js';
+import { showMetadata } from './metadata.js';
 
-document.documentElement.dataset.platform = window.orgPreview.platform;
+document.documentElement.dataset.platform = window.markupPreview.platform;
 initializeAppearance();
 
 const $ = (selector) => document.querySelector(selector);
-const api = window.orgPreview;
+const api = window.markupPreview;
 $('.version').textContent = appVersion;
 let current;
+let currentParsed;
+let pendingNavigation;
 let sourceMode = false;
 const finder = createSearch(() => $(sourceMode ? '#source' : '#document'), $('#reader'), (text) => { $('#search-count').textContent = text; });
 let observer;
@@ -97,8 +100,11 @@ async function acceptSession(state) {
   activeTabId = state.activeId;
   renderTabs(state.activeId);
   sessionOpenError = state.openError;
+  if (state.navigation) pendingNavigation = state.navigation;
+  else if (pendingNavigation?.documentId !== state.activeId) pendingNavigation = null;
+  let navigationError = '';
   if (Object.hasOwn(state, 'document')) {
-    if (state.document) await acceptDocument(state.document);
+    if (state.document) navigationError = await acceptDocument(state.document);
     else {
       saveView(); current = undefined; renderRevision++; observer?.disconnect(); finder.clear();
       activeDiagrams = [];
@@ -106,15 +112,33 @@ async function acceptSession(state) {
       $('#empty-state').hidden = false; $('#document').hidden = true; $('#source').hidden = true;
       $('#sidebar').hidden = true; $('.page-top').hidden = true;
       $('#search-bar').hidden = true; $('#stats').textContent = '';
-      $('#status').textContent = 'Open an Org file to begin.';
+      $('#status').textContent = 'Open an Org or Markdown file to begin.';
       $('#reader').removeAttribute('aria-labelledby');
     }
   }
+  if (state.sequence !== sessionSequence) {
+    if (navigationError && current?.id === activeTabId) error(navigationError);
+    return;
+  }
+  navigationError ||= applyNavigation();
   const activeError = tabs.find((tab) => tab.id === activeTabId)?.error;
   for (const id of views.keys()) if (!tabs.some((tab) => tab.id === id)) views.delete(id);
   for (const selector of ['#preview-tab', '#source-tab', '#find-button', '#toggle-outline', '#file-info']) $(selector).disabled = !activeTabId;
-  $('#error').hidden = !(activeError || sessionOpenError);
-  if (activeError || sessionOpenError) error(sessionOpenError || activeError);
+  $('#error').hidden = !(activeError || sessionOpenError || navigationError);
+  if (activeError || sessionOpenError || navigationError) error(sessionOpenError || activeError || navigationError);
+}
+
+function applyNavigation() {
+  if (!pendingNavigation || current?.id !== pendingNavigation.documentId) return '';
+  const { fragment } = pendingNavigation;
+  pendingNavigation = null;
+  const id = fragment.value ? resolveAnchor(currentParsed, fragment) : 'document-title';
+  if (sourceMode) setView(false);
+  if (!id) return `Heading not found: ${fragment.value}`;
+  interactionRevision++;
+  document.getElementById(id)?.scrollIntoView({ block: 'start' });
+  scrollPositions.preview = $('#reader').scrollTop;
+  return '';
 }
 
 function setView(source) {
@@ -125,7 +149,7 @@ function setView(source) {
   $('#source').hidden = !source;
   $('#preview-tab').setAttribute('aria-pressed', String(!source));
   $('#source-tab').setAttribute('aria-pressed', String(source));
-  $('#mode-label').textContent = source ? 'ORG SOURCE · READ ONLY' : 'ORG DOCUMENT';
+  $('#mode-label').textContent = `${current.format === 'markdown' ? 'MARKDOWN' : 'ORG'} ${source ? 'SOURCE · READ ONLY' : 'DOCUMENT'}`;
   $('#reader').scrollTop = scrollPositions[source ? 'source' : 'preview'];
   if ($('#search').value) finder.search($('#search').value, true, true, false);
 }
@@ -146,7 +170,8 @@ async function acceptDocument(doc) {
   await new Promise(requestAnimationFrame);
   if (revision !== renderRevision) return;
   try {
-    const parsed = renderOrg(doc.source, doc.name.replace(/\.org$/i, ''));
+    const parsed = renderDocument(doc);
+    currentParsed = parsed;
     current = doc;
     sourceMode = view.sourceMode;
     scrollPositions = { ...view.scroll };
@@ -156,17 +181,19 @@ async function acceptDocument(doc) {
     $('#document').hidden = sourceMode; $('#source').hidden = !sourceMode;
     $('#preview-tab').setAttribute('aria-pressed', String(!sourceMode));
     $('#source-tab').setAttribute('aria-pressed', String(sourceMode));
-    $('#mode-label').textContent = sourceMode ? 'ORG SOURCE · READ ONLY' : 'ORG DOCUMENT';
+    $('#mode-label').textContent = `${doc.format === 'markdown' ? 'MARKDOWN' : 'ORG'} ${sourceMode ? 'SOURCE · READ ONLY' : 'DOCUMENT'}`;
     $('#search-bar').hidden = !view.searchOpen;
     $('#search').value = view.search.query;
     $('#error').hidden = true;
     $('#filename').textContent = doc.name;
+    $('.file-icon').textContent = doc.format === 'markdown' ? 'md' : 'org';
+    $('#format-label').textContent = doc.format === 'markdown' ? 'Markdown' : 'Org mode';
     $('#breadcrumb').textContent = doc.path;
     $('#file-info').title = `Reveal ${doc.path}`;
     $('#document-title').textContent = parsed.title;
     $('#subtitle').textContent = parsed.subtitle;
     $('#subtitle').hidden = !parsed.subtitle;
-    $('#metadata').textContent = [parsed.author, `${Math.max(1, Math.ceil(parsed.words / 220))} min read`].filter(Boolean).join('  ·  ');
+    showMetadata($('#metadata'), parsed);
     $('#content').innerHTML = DOMPurify.sanitize(parsed.html, { USE_PROFILES: { html: true }, FORBID_TAGS: ['style', 'img', 'video', 'audio', 'iframe', 'form'], FORBID_ATTR: ['style'] });
     $('#source').textContent = doc.source;
     activeDiagrams = parsed.diagrams;
@@ -212,6 +239,7 @@ async function acceptDocument(doc) {
     };
     refreshDiagrams(layoutChanged);
     void loadImages($('#content'), parsed.images, doc.path, (file, reference) => api.image(file, reference, doc.revision), () => revision === renderRevision, layoutChanged);
+    return applyNavigation();
   } catch (reason) { error(`Could not render this file: ${reason.message}`); }
 }
 function refreshDiagrams(onChange) {
@@ -243,6 +271,11 @@ $('#content').addEventListener('click', (event) => {
   const link = event.target.closest('a');
   if (!link) return;
   event.preventDefault();
+  if (link.dataset.documentLink !== undefined) {
+    const reference = currentParsed.links[Number(link.dataset.documentLink)];
+    if (reference) run(api.openLink(current.id, current.revision, reference));
+    return;
+  }
   const href = link.getAttribute('href');
   if (href?.startsWith('#')) goTo(href.slice(1));
   else if (href) run(api.external(href));

@@ -1,8 +1,9 @@
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
-contextBridge.exposeInMainWorld('orgPreview', {
+contextBridge.exposeInMainWorld('markupPreview', {
   platform: process.platform,
   windowTheme: (theme) => ipcRenderer.invoke('window:theme', theme),
   open: () => ipcRenderer.invoke('document:open'),
+  openLink: (id, revision, reference) => ipcRenderer.invoke('document:link', id, revision, reference),
   openPath: (path) => ipcRenderer.invoke('document:path', path),
   openPaths: (paths) => ipcRenderer.invoke('document:paths', paths),
   activate: (id) => ipcRenderer.invoke('document:activate', id),

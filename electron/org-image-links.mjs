@@ -1,7 +1,5 @@
-export const MAX_IMAGE_LINKS = 100;
-
 // Org inline images are links without a description. Keep web links as links.
-export function localImageTarget(reference) {
+export function orgImageTarget(reference) {
   if (typeof reference !== 'string' || reference.length > 8192) return null;
   const match = reference.match(/^\[\[([^\]\r\n]+)\]\]$/);
   if (!match) return null;

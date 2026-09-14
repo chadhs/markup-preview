@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { setAppearance } from './appearance-smoke.mjs';
 
-export async function checkHighlighting(window, directory, prefix) {
+export async function checkOrgHighlighting(window, directory, prefix) {
   const file = path.join(directory, 'highlighting.org');
   const large = '// <large> & ' + 'x'.repeat(60_000);
   const source = `#+title: Syntax highlighting
@@ -48,7 +48,7 @@ ${large}
   const onRequest = (request) => { if (/^https?:/.test(request.url())) remoteRequests.push(request.url()); };
   window.on('request', onRequest);
   try {
-    await window.evaluate((file) => window.orgPreview.openPath(file), file);
+    await window.evaluate((file) => window.markupPreview.openPath(file), file);
     await expect(window.locator('#document-title')).toHaveText('Syntax highlighting');
     const blocks = window.locator('.code-block code');
     await expect(blocks).toHaveCount(7);

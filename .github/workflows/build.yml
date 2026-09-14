@@ -50,7 +50,7 @@ jobs:
           CSC_FOR_PULL_REQUEST: 'true'
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: env -u CSC_LINK -u CSC_KEY_PASSWORD -u CSC_NAME npm run dist:mac -- -c.mac.identity=- -c.mac.notarize=false
-      - name: Package Linux prototype
+      - name: Package Linux application
         if: runner.os == 'Linux'
         run: npm run dist:linux
       - name: Validate the Linux AppImage launcher
@@ -58,35 +58,44 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y desktop-file-utils
-          mkdir -p "$RUNNER_TEMP/org-preview-appimage"
-          cd "$RUNNER_TEMP/org-preview-appimage"
+          mkdir -p "$RUNNER_TEMP/markup-preview-appimage"
+          cd "$RUNNER_TEMP/markup-preview-appimage"
           appimages=("$GITHUB_WORKSPACE"/release/*.AppImage)
           test "${#appimages[@]}" -eq 1
           "${appimages[0]}" --appimage-extract > /dev/null
-          desktop-file-validate squashfs-root/org-preview.desktop
+          desktop-file-validate squashfs-root/markup-preview.desktop
           node "$GITHUB_WORKSPACE/scripts/check-linux-desktop.mjs" squashfs-root
       - name: Smoke test the macOS ZIP artifact
         if: runner.os == 'macOS'
         run: |
-          mkdir -p "$RUNNER_TEMP/org-preview-packaged"
-          ditto -xk release/*.zip "$RUNNER_TEMP/org-preview-packaged"
-          codesign --verify --deep --strict --verbose=2 "$RUNNER_TEMP/org-preview-packaged/Org Preview.app"
-          ORG_PREVIEW_EXECUTABLE="$RUNNER_TEMP/org-preview-packaged/Org Preview.app/Contents/MacOS/Org Preview" node scripts/smoke.mjs
+          mkdir -p "$RUNNER_TEMP/markup-preview-packaged"
+          ditto -xk release/*.zip "$RUNNER_TEMP/markup-preview-packaged"
+          codesign --verify --deep --strict --verbose=2 "$RUNNER_TEMP/markup-preview-packaged/Markup Preview.app"
+          python3 scripts/check-mac-bundle.py "$RUNNER_TEMP/markup-preview-packaged/Markup Preview.app"
+          MARKUP_PREVIEW_EXECUTABLE="$RUNNER_TEMP/markup-preview-packaged/Markup Preview.app/Contents/MacOS/Markup Preview" node scripts/smoke.mjs
       - name: Verify the macOS DMG app signature
         if: runner.os == 'macOS'
         run: |
-          mountpoint="$RUNNER_TEMP/org-preview-dmg"
+          mountpoint="$RUNNER_TEMP/markup-preview-dmg"
           mkdir -p "$mountpoint"
           images=(release/*.dmg)
           test "${#images[@]}" -eq 1
           hdiutil attach -readonly -nobrowse -mountpoint "$mountpoint" "${images[0]}"
           trap 'hdiutil detach "$mountpoint"' EXIT
-          codesign --verify --deep --strict --verbose=2 "$mountpoint/Org Preview.app"
+          codesign --verify --deep --strict --verbose=2 "$mountpoint/Markup Preview.app"
+      - name: Smoke test the Linux tar artifact
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p "$RUNNER_TEMP/markup-preview-packaged"
+          tar -xzf release/*.tar.gz -C "$RUNNER_TEMP/markup-preview-packaged"
+          mapfile -t executables < <(find "$RUNNER_TEMP/markup-preview-packaged" -type f -name markup-preview)
+          test "${#executables[@]}" -eq 1
+          MARKUP_PREVIEW_EXECUTABLE="${executables[0]}" xvfb-run --auto-servernum node scripts/smoke.mjs
       - name: Generate package checksums
         run: npm run checksums
       - uses: actions/upload-artifact@v7.0.1
         with:
-          name: org-preview-${{ runner.os }}-${{ runner.arch }}
+          name: markup-preview-${{ runner.os }}-${{ runner.arch }}
           path: |
             release/*.dmg
             release/*.zip

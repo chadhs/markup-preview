@@ -72,13 +72,4 @@ function createDiagramRenderer({ Window, ipc, timeoutMs = 5000 } = {}) {
   return { render, cancel };
 }
 
-function diagramSource(doc, request) {
-  if (!request || !Number.isSafeInteger(request.start) || !Number.isSafeInteger(request.end)
-    || request.start < 0 || request.end > doc.source.length || request.end <= request.start
-    || request.end - request.start > 22000) throw new Error('Invalid or oversized diagram block.');
-  const block = doc.source.slice(request.start, request.end);
-  const match = block.match(/^[ \t]*#\+begin_src[ \t]+mermaid(?:[ \t][^\r\n]*)?\r?\n([\s\S]*?)\r?\n[ \t]*#\+end_src[ \t\r\n]*$/i);
-  if (!match || match[1].length > 20000) throw new Error('Invalid or oversized Mermaid block.');
-  return match[1];
-}
-module.exports = { createDiagramRenderer, diagramSource };
+module.exports = { createDiagramRenderer };

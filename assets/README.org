@@ -1,7 +1,8 @@
-#+title: Org Preview icon
+#+title: Markup Preview icon
 
 The icon combines an Org heading star with document lines, using the
-terracotta and cream colors of the reading interface.
+terracotta and cream colors of the reading interface. Markup Preview keeps
+the original Org Preview artwork unchanged as a nod to its Org-mode origins.
 
 =icon.svg= is the source. Run =npm run icons= with Node 24 to regenerate
 =build/icon.icns= and the Linux PNG sizes in =build/icons/=. The generated

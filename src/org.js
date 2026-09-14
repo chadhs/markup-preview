@@ -1,13 +1,17 @@
-import { parse } from 'orga';
 import { createCodeHighlighter } from './highlight.js';
-import { localImageTarget, MAX_IMAGE_LINKS } from '../electron/image-links.mjs';
+import formats from '../electron/formats.cjs';
+import { orgImageTarget } from '../electron/org-image-links.mjs';
 
-export const escapeHtml = (value = '') => String(value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+import { escapeHtml } from './html.js';
+import { analyzeDocument } from './document-analysis.js';
+const { MAX_IMAGE_LINKS } = formats;
 const ignored = new Set(['stars', 'opening', 'closing', 'link.path', 'list.item.bullet', 'emptyLine', 'table.columnSeparator', 'table.hr']);
 const styles = { bold: 'strong', italic: 'em', underline: 'u', strikeThrough: 's', strikethrough: 's', code: 'code', verbatim: 'code' };
 
 export function renderOrg(source, fallbackTitle = 'Untitled') {
-  const tree = parse(source);
+  const analysis = analyzeDocument({ source, format: 'org' });
+  const { tree, links } = analysis;
+  const anchors = Object.create(null);
   const highlightCode = createCodeHighlighter();
   const outline = [];
   const images = [];
@@ -29,6 +33,9 @@ export function renderOrg(source, fallbackTitle = 'Untitled') {
         for (let n = 2; used.has(id); n++) id = `${base}-${n}`;
         used.add(id);
         ids.set(heading, id);
+        anchors[id] = id;
+        if (node.properties?.custom_id) anchors[node.properties.custom_id] ??= id;
+        anchors[id.slice(4)] = id;
         outline.push({ id, label, level: heading.level, todo: heading.keyword || '' });
       }
     }
@@ -36,9 +43,9 @@ export function renderOrg(source, fallbackTitle = 'Untitled') {
     for (let i = 0; i < siblings.length; i++) {
       const block = siblings[i];
       if (block.type !== 'block' || block.name.toLowerCase() !== 'src' || block.params?.[0]?.toLowerCase() !== 'mermaid') continue;
-      const error = diagrams.length >= 20 ? 'Diagram limit reached: 20 per document.'
+      const error = analysis.nodes.get(block)?.diagram?.error || (diagrams.length >= 20 ? 'Diagram limit reached: 20 per document.'
         : block.value.length > 20000 ? 'Diagram exceeds 20,000 characters.'
-        : diagramCharacters + block.value.length > 100000 ? 'Diagram source exceeds 100,000 characters per document.' : '';
+        : diagramCharacters + block.value.length > 100000 ? 'Diagram source exceeds 100,000 characters per document.' : '');
       if (error) { diagramNodes.set(block, { error }); continue; }
       diagramCharacters += block.value.length;
       const diagram = { id: diagrams.length, start: block.position.start.offset, end: block.position.end.offset };
@@ -46,7 +53,7 @@ export function renderOrg(source, fallbackTitle = 'Untitled') {
       const [result, link] = following;
       if (result?.type === 'keyword' && result.key.toLowerCase() === 'results'
         && (result.value || '') === (block.attributes?.name || '')
-        && link?.type === 'link' && localImageTarget(raw(link))
+        && link?.type === 'link' && orgImageTarget(raw(link))
         && !source.slice(block.position.end.offset, result.position.start.offset).trim()
         && !source.slice(result.position.end.offset, link.position.start.offset).trim()
         && /^[ \t]*(?:\r?\n[ \t]*(?:\r?\n|$)|$)/.test(source.slice(link.position.end.offset))) {
@@ -79,12 +86,14 @@ export function renderOrg(source, fallbackTitle = 'Untitled') {
       case 'link': {
         const pathValue = node.path?.value || '';
         const reference = raw(node);
-        if (node.path?.protocol === 'file' && localImageTarget(reference)) {
+        if (node.path?.protocol === 'file' && orgImageTarget(reference)) {
           if (images.length >= MAX_IMAGE_LINKS) return `<span class="image-placeholder">Image limit reached: ${escapeHtml(pathValue)}</span>`;
           const id = images.length;
           images.push({ id, reference, start: node.position.start.offset, end: node.position.end.offset, label: pathValue });
           return `<span class="image-preview" data-image-id="${id}" data-image-start="${node.position.start.offset}"><span class="image-placeholder">Loading image: ${escapeHtml(pathValue)}</span></span>`;
         }
+        const local = analysis.nodes.get(node)?.link;
+        if (local) return `<a href="#" data-document-link="${local.id}">${children(node) || escapeHtml(local.target)}</a>`;
         // Orga separates mailto from its address, unlike HTTP URLs.
         const value = node.path?.protocol === 'mailto' ? `mailto:${pathValue}` : pathValue;
         const label = children(node) || escapeHtml(value);
@@ -93,7 +102,7 @@ export function renderOrg(source, fallbackTitle = 'Untitled') {
           return target ? `<a href="#${escapeHtml(target)}">${label}</a>` : `<span class="unresolved" title="Unresolved Org link">${label}</span>`;
         }
         if (/^https?:\/\//i.test(value) || /^mailto:/i.test(value)) return `<a href="${escapeHtml(value)}" rel="noreferrer">${label}</a>`;
-        return `<span class="unresolved" title="Local and custom protocol links are not available in v0.1">${label}</span>`;
+        return `<span class="unresolved" title="Unsupported local file or custom protocol link">${label}</span>`;
       }
       case 'list': {
         // Orga may group ordered and unordered items in the same list node.
@@ -140,10 +149,13 @@ export function renderOrg(source, fallbackTitle = 'Untitled') {
     }
   }
   return {
-    html: render(tree), outline, images, diagrams,
+    html: render(tree), outline, images, diagrams, links, anchors,
     title: String(tree.properties.title || fallbackTitle),
     subtitle: String(tree.properties.subtitle || ''),
     author: String(tree.properties.author || ''),
+    date: analysis.metadata.date || String(tree.properties.date || ''),
+    tags: analysis.metadata.tags,
+    draft: analysis.metadata.draft,
     words: source.trim() ? source.trim().split(/\s+/).length : 0,
     lines: source.split('\n').length,
   };

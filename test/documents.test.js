@@ -7,13 +7,19 @@ import { readDocument, watchDocument, MAX_BYTES } from '../electron/documents.cj
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function until(predicate) { for (let i = 0; i < 100; i++) { if (predicate()) return; await delay(30); } throw new Error('Timed out waiting for file watch'); }
 
-test('reads Org files and rejects invalid types, directories and oversized input', async () => {
-  const dir = await mkdtemp(path.join(tmpdir(), 'org-preview-'));
+test('reads Org and Markdown files and rejects invalid types, directories and oversized input', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'markup-preview-'));
   try {
     const file = path.join(dir, 'notes.ORG');
     await writeFile(file, '* Hello\nUnicode: 日本語');
     assert.match((await readDocument(file)).source, /日本語/);
-    await assert.rejects(readDocument(path.join(dir, 'notes.md')), /Choose an .org/);
+    await assert.rejects(readDocument(path.join(dir, 'notes.txt')), /Choose an .org/);
+    for (const extension of ['md', 'MD', 'markdown', 'MARKDOWN']) {
+      const markdown = path.join(dir, `notes.${extension}`);
+      await writeFile(markdown, '# Hello 日本語');
+      assert.equal((await readDocument(markdown)).format, 'markdown');
+    }
+    assert.equal((await readDocument(file)).format, 'org');
     await mkdir(path.join(dir, 'folder.org'));
     await assert.rejects(readDocument(path.join(dir, 'folder.org')), /directory/);
     await writeFile(file, Buffer.alloc(MAX_BYTES + 1));
@@ -22,7 +28,7 @@ test('reads Org files and rejects invalid types, directories and oversized input
 });
 
 test('reads the full 16 MiB limit, including UTF-8 characters across read chunks', async () => {
-  const dir = await mkdtemp(path.join(tmpdir(), 'org-preview-large-'));
+  const dir = await mkdtemp(path.join(tmpdir(), 'markup-preview-large-'));
   try {
     const file = path.join(dir, 'large.org');
     const source = 'a'.repeat(65535) + '日本語' + 'b'.repeat(MAX_BYTES - 65535 - 9);
@@ -33,9 +39,9 @@ test('reads the full 16 MiB limit, including UTF-8 characters across read chunks
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test('watches normal saves, atomic replacements, deletion and recreation; stops cleanly', async () => {
-  const dir = await mkdtemp(path.join(tmpdir(), 'org-preview-'));
-  const file = path.join(dir, 'notes.org');
+for (const extension of ['org', 'md', 'markdown']) test(`${extension}: watches normal saves, atomic replacements, deletion and recreation; stops cleanly`, async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'markup-preview-'));
+  const file = path.join(dir, `notes.${extension}`);
   const changes = [], errors = [];
   await writeFile(file, '* Initial');
   const stop = watchDocument(file, (doc) => changes.push(doc.source), (error) => errors.push(error.code), 30);

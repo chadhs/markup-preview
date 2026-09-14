@@ -1,11 +1,12 @@
 const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
+const { documentFormat } = require('./formats.cjs');
 const MAX_BYTES = 16 * 1024 * 1024;
-const sizeError = () => new Error('Org Preview supports files up to 16 MiB.');
+const sizeError = () => new Error('Markup Preview supports files up to 16 MiB.');
 
 async function readDocument(filePath) {
-  if (typeof filePath !== 'string' || path.extname(filePath).toLowerCase() !== '.org') throw new Error('Choose an .org file.');
+  if (!documentFormat(filePath)) throw new Error('Choose an .org, .md, or .markdown file.');
   const absolute = path.resolve(filePath);
   const handle = await fsp.open(absolute, 'r');
   try {
@@ -22,7 +23,7 @@ async function readDocument(filePath) {
       chunks.push(buffer.subarray(0, bytesRead));
     }
     if (total > MAX_BYTES) throw sizeError();
-    return { path: absolute, name: path.basename(absolute), source: Buffer.concat(chunks, total).toString('utf8'), modified: stat.mtimeMs, size: total };
+    return { format: documentFormat(filePath), path: absolute, name: path.basename(absolute), source: Buffer.concat(chunks, total).toString('utf8'), modified: stat.mtimeMs, size: total };
   } finally { await handle.close(); }
 }
 

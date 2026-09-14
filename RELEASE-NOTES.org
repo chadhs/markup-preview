@@ -1,10 +1,25 @@
-#+title: Org Preview release information
+#+title: Markup Preview release information
 
 * Release policy
 Each push to =main= publishes a new minor release after both platform checks
 pass. The first version is =0.1.0=, followed by =0.2.0=, =0.3.0=, and so on.
 The GitHub release page contains the exact version, changes, downloads,
 and checksums. Pull requests do not publish releases.
+
+* Markup Preview and Markdown for v0.7.0
+- Rename the app, package, command, repository, and download artifacts to
+  Markup Preview. Keep the original Org heading icon unchanged.
+- Open =.org=, =.md=, and =.markdown= documents with the same tabs, outline,
+  search, read-only source view, themes, and live updates.
+- Render GitHub-style Markdown tables, tasks, strikethrough, autolinks,
+  reference links, footnotes, highlighted code, local images, and Mermaid fences.
+- Preview Hugo title, author, date, tags, and draft metadata from Org headers
+  or Markdown YAML/TOML front matter. Show a Draft badge only when true.
+- Follow links between Org and Markdown documents, including heading and
+  custom-ID targets. Reuse existing tabs and report unavailable destinations.
+- Use a fresh app identity and default appearance settings. Existing Org
+  Preview installations and settings remain untouched; see the replacement
+  instructions in the README.
 
 * Document tabs, Mermaid, and a compact title bar for v0.6.0
 - Combine the window title bar and reading controls into a compact themed row,
@@ -50,8 +65,8 @@ and checksums. Pull requests do not publish releases.
 - Test multi-megabyte documents, source view, search, outline navigation,
   and live saves in the desktop smoke suite.
 
-* A live reader for Org files
-Org Preview opens local =.org= files and refreshes the document when you
+* A live reader for Org and Markdown files
+Markup Preview opens local =.org=, =.md=, and =.markdown= files and refreshes the document when you
 save in your editor. It runs on macOS and Linux without requiring Emacs,
 an account, or a cloud service.
 
@@ -62,7 +77,7 @@ The application includes:
 - Headings, emphasis, tasks, tags, lists, checkboxes, tables, and code blocks.
 - HTTP/HTTPS/mailto links and common internal heading links.
 - An Org heading icon and Linux desktop entries with window matching,
-  searchable keywords, Org MIME types, and local file-URL handling.
+  searchable keywords, Org and Markdown MIME types, and local file-URL handling.
 
 Document code and embedded HTML never execute. The renderer is sandboxed,
 and documents cannot load remote resources. Web links open in your browser;
@@ -73,10 +88,10 @@ Replace =VERSION= below with the version shown on the GitHub release page.
 
 | Platform                 | Package                          |
 |--------------------------+----------------------------------|
-| macOS, Apple Silicon     | org-preview-VERSION-arm64.dmg       |
-| macOS, Apple Silicon     | org-preview-VERSION-arm64.zip   |
-| Linux, x86_64            | org-preview-VERSION.AppImage        |
-| Linux, x86_64            | org-preview-VERSION.tar.gz          |
+| macOS, Apple Silicon     | markup-preview-VERSION-arm64.dmg       |
+| macOS, Apple Silicon     | markup-preview-VERSION-arm64.zip   |
+| Linux, x86_64            | markup-preview-VERSION.AppImage        |
+| Linux, x86_64            | markup-preview-VERSION.tar.gz          |
 
 Builds include a platform-specific =SHA256SUMS-*.txt= file. Compare a
 package's SHA-256 with that file before installing. On macOS use
@@ -97,7 +112,7 @@ AUR or pacman package yet.
   Tabs do not persist after quitting.
 - This is a reader. Keep editing in your existing editor.
 - Org rendering covers the documented subset, not full Emacs export parity.
-- Links to other local files, math, diagram engines other than Mermaid, Babel,
+- Unsupported local file types, math, diagram engines other than Mermaid, Babel,
   remote includes, agenda features, Quick Look, and automatic updates are excluded.
 - Direct FUSE-mounted AppImage launch was not tested on the Omarchy machine,
   which lacks FUSE 2. Extract-and-run and tar execution passed.
@@ -107,12 +122,12 @@ AUR or pacman package yet.
   the maintainer's final check.
 
 * Validation and license
-The implementation has passed automated checks on macOS and Linux, real
-Omarchy Wayland/XWayland testing, and Mac native checks. The user verified
-Finder dragging and Mac keyboard shortcuts. CI tests the Mac ZIP application
+CI checks the implementation on macOS and Linux. Earlier Org Preview
+releases were also tested on real Omarchy Wayland/XWayland and with native
+Mac file actions. CI tests the Mac ZIP application
 and validates the extracted AppImage's desktop entry, icon, and sandbox flags.
 The README summarizes platform verification. Automated tests stay in the
 repository; per-run screenshots and build logs are CI artifacts.
 
-Org Preview and its artwork use BSD-3-Clause. The Org parser, Orga, uses MIT.
+Markup Preview and its artwork use BSD-3-Clause. The Org parser, Orga, uses MIT.
 Bundled dependencies retain their licenses in =THIRD-PARTY-NOTICES.org=.

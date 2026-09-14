@@ -48,10 +48,10 @@ test('unit-test imports and injected renderers never bootstrap the Electron bina
       if (name === 'electron') throw new Error('Unexpected Electron bootstrap');
       return load.call(this, name, ...args);
     };
-    const { createDiagramRenderer, diagramSource } = require('./electron/diagrams.cjs');
+    const { createDiagramRenderer } = require('./electron/diagrams.cjs');
     const renderer = createDiagramRenderer({ Window: class {}, ipc: { on() {} } });
     renderer.cancel();
-    if (typeof diagramSource !== 'function') throw new Error('Missing source validator');
+    if (typeof require('./electron/resource-index.cjs').documentResource !== 'function') throw new Error('Missing source validator');
   `], { encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
 });

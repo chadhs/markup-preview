@@ -8,19 +8,19 @@ function storage(entries = []) {
 }
 
 test('Markup Preview preferences use their own namespace and default themes', () => {
-  assert.deepEqual(readPreferences(storage()), { mode: 'system', light: 'light', dark: 'dark', sansSerifHeadings: false });
+  assert.deepEqual(readPreferences(storage()), { mode: 'system', light: 'light', dark: 'dark', contentWidth: 'reading', sansSerifHeadings: false });
   for (const mode of ['system', 'light', 'dark']) {
-    assert.deepEqual(readPreferences(storage([['markup-preview-theme', mode]])), { mode, light: 'light', dark: 'dark', sansSerifHeadings: false });
+    assert.deepEqual(readPreferences(storage([['markup-preview-theme', mode]])), { mode, light: 'light', dark: 'dark', contentWidth: 'reading', sansSerifHeadings: false });
   }
 });
 
 test('invalid settings fall back independently without losing valid preferences', () => {
   assert.deepEqual(normalizePreferences({ mode: 'sepia', light: 'solarized-light', dark: 'unknown' }), {
-    mode: 'system', light: 'solarized-light', dark: 'dark', sansSerifHeadings: false,
+    mode: 'system', light: 'solarized-light', dark: 'dark', contentWidth: 'reading', sansSerifHeadings: false,
   });
   for (const light of [undefined, null, '', 'dark', 'solarized-dark']) {
     assert.deepEqual(normalizePreferences({ mode: 'dark', light, dark: 'solarized-dark' }), {
-      mode: 'dark', light: 'light', dark: 'solarized-dark', sansSerifHeadings: false,
+      mode: 'dark', light: 'light', dark: 'solarized-dark', contentWidth: 'reading', sansSerifHeadings: false,
     });
   }
   for (const dark of [undefined, null, '', 'light', 'solarized-light']) {
@@ -30,7 +30,7 @@ test('invalid settings fall back independently without losing valid preferences'
 
 test('preferences persist separately under the Markup Preview namespace', () => {
   const saved = storage();
-  const preferences = { mode: 'system', light: 'solarized-light', dark: 'solarized-dark', sansSerifHeadings: true };
+  const preferences = { mode: 'system', light: 'solarized-light', dark: 'solarized-dark', contentWidth: 'full', sansSerifHeadings: true };
   savePreferences(saved, preferences);
   assert.equal(saved.getItem('markup-preview-theme'), 'system');
   assert.equal(saved.getItem('markup-preview-light-theme'), 'solarized-light');
@@ -54,5 +54,19 @@ test('System resolves every preferred pair using OS appearance; manual modes ign
         assert.deepEqual(resolveTheme({ mode: 'dark', light, dark }, systemDark), { theme: dark, colorScheme: 'dark' });
       }
     }
+  }
+});
+
+test('content width defaults independently and persists both choices', () => {
+  for (const contentWidth of [undefined, null, '', 'wide', true, 850]) {
+    const preferences = normalizePreferences({ contentWidth, dark: 'solarized-dark' });
+    assert.equal(preferences.contentWidth, 'reading');
+    assert.equal(preferences.dark, 'solarized-dark');
+  }
+  const saved = storage();
+  for (const contentWidth of ['full', 'reading']) {
+    savePreferences(saved, { contentWidth });
+    assert.equal(saved.getItem('markup-preview-content-width'), contentWidth);
+    assert.equal(readPreferences(saved).contentWidth, contentWidth);
   }
 });

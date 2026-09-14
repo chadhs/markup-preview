@@ -124,6 +124,7 @@ async function acceptSession(state) {
   const activeError = tabs.find((tab) => tab.id === activeTabId)?.error;
   for (const id of views.keys()) if (!tabs.some((tab) => tab.id === id)) views.delete(id);
   for (const selector of ['#preview-tab', '#source-tab', '#find-button', '#toggle-outline', '#file-info']) $(selector).disabled = !activeTabId;
+  $('#toggle-content-width').disabled = !activeTabId || sourceMode;
   $('#error').hidden = !(activeError || sessionOpenError || navigationError);
   if (activeError || sessionOpenError || navigationError) error(sessionOpenError || activeError || navigationError);
 }
@@ -149,6 +150,7 @@ function setView(source) {
   $('#source').hidden = !source;
   $('#preview-tab').setAttribute('aria-pressed', String(!source));
   $('#source-tab').setAttribute('aria-pressed', String(source));
+  $('#toggle-content-width').disabled = source;
   $('#mode-label').textContent = `${current.format === 'markdown' ? 'MARKDOWN' : 'ORG'} ${source ? 'SOURCE · READ ONLY' : 'DOCUMENT'}`;
   $('#reader').scrollTop = scrollPositions[source ? 'source' : 'preview'];
   if ($('#search').value) finder.search($('#search').value, true, true, false);
@@ -181,6 +183,7 @@ async function acceptDocument(doc) {
     $('#document').hidden = sourceMode; $('#source').hidden = !sourceMode;
     $('#preview-tab').setAttribute('aria-pressed', String(!sourceMode));
     $('#source-tab').setAttribute('aria-pressed', String(sourceMode));
+    $('#toggle-content-width').disabled = sourceMode;
     $('#mode-label').textContent = `${doc.format === 'markdown' ? 'MARKDOWN' : 'ORG'} ${sourceMode ? 'SOURCE · READ ONLY' : 'DOCUMENT'}`;
     $('#search-bar').hidden = !view.searchOpen;
     $('#search').value = view.search.query;

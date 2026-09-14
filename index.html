@@ -14,6 +14,7 @@
         <div class="toolbar-actions">
           <button id="toggle-outline" class="icon-button" aria-label="Toggle outline" title="Toggle outline"><svg viewBox="0 0 20 20"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M8 4v12"/></svg></button>
           <div class="segmented" aria-label="Document view"><button id="preview-tab" aria-pressed="true">Preview</button><button id="source-tab" aria-pressed="false">Source</button></div>
+          <button id="toggle-content-width" class="icon-button" aria-label="Use full width" title="Use full width" aria-pressed="false" disabled><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4v12M17 4v12"/><path class="width-expand" d="m7 7-3 3 3 3m6-6 3 3-3 3M4 10h12"/><path class="width-collapse" d="m4 7 3 3-3 3m12-6-3 3 3 3M3 10h4m6 0h4"/></svg></button>
           <button id="find-button" class="icon-button" aria-label="Find in document" title="Find in document"><svg viewBox="0 0 20 20"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4 4"/></svg></button>
           <button id="appearance-button" popovertarget="appearance-panel" aria-haspopup="dialog" aria-controls="appearance-panel" aria-expanded="false">Appearance</button>
           <div id="appearance-panel" popover role="dialog" aria-labelledby="appearance-title">
@@ -24,6 +25,8 @@
             <select id="light-theme"><option value="light">Default Light</option><option value="solarized-light">Solarized Light</option></select>
             <label for="dark-theme">Dark theme</label>
             <select id="dark-theme"><option value="dark">Default Dark</option><option value="solarized-dark">Solarized Dark</option></select>
+            <label for="content-width">Content width</label>
+            <select id="content-width"><option value="reading">Reading</option><option value="full">Full width</option></select>
             <label class="appearance-checkbox"><input id="sans-serif-headings" type="checkbox">Sans-serif headings</label>
             <p>System follows your device's light or dark mode.</p>
           </div>

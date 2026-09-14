@@ -4,6 +4,7 @@ export async function setAppearance(window, preferences) {
   if (!await window.locator('#appearance-panel').isVisible()) await window.locator('#appearance-button').click();
   for (const [name, value] of Object.entries(preferences)) {
     if (name === 'sansSerifHeadings') await window.locator('#sans-serif-headings').setChecked(value);
+    else if (name === 'contentWidth') await window.locator('#content-width').selectOption(value);
     else await window.locator(name === 'mode' ? '#appearance-mode' : `#${name}-theme`).selectOption(value);
   }
 }
@@ -54,6 +55,35 @@ export async function checkAppearance(window) {
   await expect(window.locator('#content h2').first()).toHaveCSS('font-family', /Georgia/);
   await window.keyboard.press('Escape');
 
+  const widthToggle = window.locator('#toggle-content-width');
+  await expect(widthToggle).toBeEnabled();
+  await expect(widthToggle).toHaveAttribute('aria-pressed', 'false');
+  await expect(widthToggle).toHaveAccessibleName('Use full width');
+  await widthToggle.focus();
+  await window.keyboard.press('Enter');
+  await expect(widthToggle).toHaveAttribute('aria-pressed', 'true');
+  await expect(widthToggle).toHaveAccessibleName('Use reading width');
+  await expect(widthToggle).toHaveAttribute('title', 'Use reading width');
+  await expect(window.locator('#content-width')).toHaveValue('full');
+  await expect(window.locator('html')).toHaveAttribute('data-content-width', 'full');
+  await window.reload();
+  await expect(widthToggle).toHaveAttribute('aria-pressed', 'true');
+  await expect(window.locator('#content-width')).toHaveValue('full');
+  await window.locator('#source-tab').click();
+  await expect(widthToggle).toBeDisabled();
+  await setAppearance(window, { contentWidth: 'reading' });
+  await expect(widthToggle).toBeDisabled();
+  await expect(widthToggle).toHaveAttribute('aria-pressed', 'false');
+  await window.keyboard.press('Escape');
+  await window.locator('#preview-tab').click();
+  await expect(widthToggle).toBeEnabled();
+  await setAppearance(window, { contentWidth: 'full' });
+  await expect(widthToggle).toHaveAttribute('aria-pressed', 'true');
+  await window.keyboard.press('Escape');
+  await widthToggle.click();
+  await expect(window.locator('#content-width')).toHaveValue('reading');
+  await expect(widthToggle).toHaveAttribute('title', 'Use full width');
+
   // Escape closes the panel and leaves an existing search untouched.
   await window.locator('#find-button').click();
   await window.locator('#search').fill('Read');
@@ -66,6 +96,8 @@ export async function checkAppearance(window) {
   await expect(window.locator('#light-theme')).toBeFocused();
   await window.keyboard.press('Tab');
   await expect(window.locator('#dark-theme')).toBeFocused();
+  await window.keyboard.press('Tab');
+  await expect(window.locator('#content-width')).toBeFocused();
   await window.keyboard.press('Tab');
   await expect(window.locator('#sans-serif-headings')).toBeFocused();
   await window.keyboard.press('Space');

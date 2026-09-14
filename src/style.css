@@ -21,6 +21,11 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .brand-icon { display: block; width: 34px; height: 34px; flex-shrink: 0; }
 .version { flex-shrink: 0; margin-left: 1px; font-size: 10px; font-family: monospace; font-weight: 400; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 2px 4px; letter-spacing: 0; }
 .toolbar-actions { flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
+#toggle-content-width[aria-pressed='true'] { background: var(--accent-wash); color: var(--accent); border-color: var(--accent); }
+#toggle-content-width:disabled { opacity: .4; cursor: default; }
+#toggle-content-width:disabled:hover { background: transparent; }
+#toggle-content-width .width-collapse, #toggle-content-width[aria-pressed='true'] .width-expand { display: none; }
+#toggle-content-width[aria-pressed='true'] .width-collapse { display: block; }
 .icon-button { display: flex; padding: 6px; }
 .segmented { display: flex; padding: 2px; border-radius: 7px; background: var(--inset); }
 .segmented button { color: var(--muted); padding: 4px 10px; font-size: 12px; }
@@ -54,6 +59,10 @@ select { border: 0; border-radius: 5px; padding: 6px; background: var(--chrome);
 #mode-label { font-size: 9px; letter-spacing: 1.2px; white-space: nowrap; }
 #document { max-width: 850px; padding: 52px 54px 30px; margin: 0 auto; }
 .eyebrow { color: var(--accent); font-size: 10px; font-weight: 650; letter-spacing: 2px; margin-bottom: 20px; }
+@media screen {
+  :root[data-content-width='full'] #document { max-width: none; }
+  :root[data-content-width='full'] #reader:has(#source[hidden]) .page-top { max-width: none; }
+}
 h1 { font-family: Georgia, 'Times New Roman', serif; font-size: clamp(32px, 3.6vw, 46px); font-weight: 400; line-height: 1.15; letter-spacing: -1.6px; margin: 0 0 14px; overflow-wrap: anywhere; }
 #subtitle { font-size: 15px; line-height: 1.65; color: var(--muted); margin: 0 0 18px; }
 #metadata { color: var(--muted); font-size: 11px; }
@@ -94,7 +103,7 @@ li:has(> input[type='checkbox']) { list-style: none; margin-left: -22px; }
 .drawer { color: var(--muted); font-size: 11px; margin: 8px 0; }
 .drawer summary { cursor: pointer; }
 .table-wrap { overflow-x: auto; margin: 22px 0; border: 1px solid var(--line); border-radius: 6px; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+table { overflow-wrap: normal; word-break: normal; width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
 th { font-weight: 550; background: var(--inset); }
 th, td { padding: 10px 14px; border-bottom: 1px solid var(--line); }
 tr:last-child td { border-bottom: 0; }

@@ -4,7 +4,7 @@
 [[file:build/icons/128x128.png]]
 
 Markup Preview is a standalone previewer for Org-mode and Markdown files
-(more formats in come!) on macOS and Linux. Keep writing in your editor;
+(more formats to come!) on macOS and Linux. Keep writing in your editor;
 read your notes here, follow their outline, and see the preview update when you save.
 No Emacs installation, account, or cloud service is needed. Your files stay local.
 

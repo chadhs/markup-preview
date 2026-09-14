@@ -3,9 +3,9 @@
 
 [[file:build/icons/128x128.png]]
 
-Markup Preview is a standalone previewer for Org-mode files on macOS and Linux.
-It also supports Markdown. Keep writing in your editor; read your notes here,
-follow their outline, and see the preview update when you save.
+Markup Preview is a standalone previewer for Org-mode and Markdown files
+(more formats in come!) on macOS and Linux. Keep writing in your editor;
+read your notes here, follow their outline, and see the preview update when you save.
 No Emacs installation, account, or cloud service is needed. Your files stay local.
 
 [[#install][Install on macOS or Omarchy]]
@@ -404,24 +404,6 @@ Open a notebook in Markup Preview and the same file in your editor. Save a
 change in the editor; the preview updates automatically. Search with
 =⌘F= / =Ctrl+F= and switch to read-only source with =⌘⇧S= / =Ctrl+Shift+S=.
 Your files stay local. Opening a preview does not modify the document.
-
-** Replacing Org Preview with Markup Preview
-Markup Preview began as Org Preview, a standalone reader for Org-mode files.
-v0.7.0 added Markdown support and kept the original Org heading icon.
-
-v0.7.0 uses a new application ID, command name, and settings namespace.
-Appearance starts at its defaults. No settings are migrated, and the old
-application and its settings are left untouched.
-
-On macOS, quit Org Preview, install Markup Preview.app, and remove the old
-Org Preview.app manually to avoid duplicate Open With entries. Select Markup
-Preview again for any default file associations you want to use.
-
-On Linux, install the new package and launcher below the =markup-preview=
-name. Remove the obsolete =~/.local/bin/org-preview= symlink and
-=~/.local/share/applications/org-preview.desktop= launcher manually after
-checking that the new app opens your files. Old extracted packages can also
-be removed when no longer needed. Documents are independent of the app.
 
 ** Update to a later version
 There is no in-app updater yet. Download the new release and quit the old

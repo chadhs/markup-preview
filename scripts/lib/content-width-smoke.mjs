@@ -18,14 +18,14 @@ export async function checkContentWidth(window, directory, prefix) {
     files.push(file);
     const lines = table.split('\n');
     const body = format === 'md'
-      ? '# Width comparison\n\n' + prose + '\n\n' + [lines[0], '| --- | --- | --- | --- |', ...lines.slice(1)].join('\n')
-        + '\n\n' + wide.split('\n')[0] + '\n| ' + manyColumns.map(() => '---').join(' | ') + ' |\n' + wide.split('\n')[1]
-        + '\n\n| Link |\n| --- |\n| ' + url + ' |'
-      : '#+title: Width comparison\n\n' + prose + '\n\n' + [lines[0], '|-+-+-+-|', ...lines.slice(1)].join('\n')
-        + '\n\n' + wide + '\n\n| Link |\n|-|\n| ' + url + ' |';
+      ? '# Width comparison md\n\n' + prose + '\n\n' + [lines[0], '| --- | --- | --- | --- |', ...lines.slice(1)].join('\n')
+        + '\n\n## Many columns\n\n' + wide.split('\n')[0] + '\n| ' + manyColumns.map(() => '---').join(' | ') + ' |\n' + wide.split('\n')[1]
+        + '\n\n## Long link\n\n| Link |\n| --- |\n| ' + url + ' |'
+      : '#+title: Width comparison org\n\n' + prose + '\n\n' + [lines[0], '|-+-+-+-|', ...lines.slice(1)].join('\n')
+        + '\n\n* Many columns\n\n' + wide + '\n\n* Long link\n\n| Link |\n|-|\n| ' + url + ' |';
     await writeFile(file, body);
     await window.evaluate((file) => window.markupPreview.openPath(file), file);
-    await expect(window.locator('#document-title')).toHaveText('Width comparison');
+    await expect(window.locator('#document-title')).toHaveText('Width comparison ' + format);
     await expect(window.locator('#content table')).toHaveCount(3);
     for (const width of [2560, 720]) {
       await window.setViewportSize({ width, height: width === 2560 ? 1440 : 700 });
@@ -71,11 +71,13 @@ export async function checkContentWidth(window, directory, prefix) {
   await window.keyboard.press('Escape');
   expect(await window.locator('#source').boundingBox()).toEqual(sourceBounds);
   await window.evaluate((file) => window.markupPreview.openPath(file), files[0]);
+  await expect(window.locator('#document-title')).toHaveText('Width comparison md');
   await expect(window.locator('#source')).toBeHidden();
   await expect(window.locator('#toggle-content-width')).toBeEnabled();
   await expect(window.locator('#content-width')).toHaveValue('reading');
   await window.locator('#toggle-content-width').click();
   await window.evaluate((file) => window.markupPreview.openPath(file), files[1]);
+  await expect(window.locator('#document-title')).toHaveText('Width comparison org');
   await expect(window.locator('#source')).toBeVisible();
   await expect(window.locator('#toggle-content-width')).toBeDisabled();
   await expect(window.locator('#content-width')).toHaveValue('full');

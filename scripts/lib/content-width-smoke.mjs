@@ -4,6 +4,8 @@ import path from 'node:path';
 import { setAppearance } from './appearance-smoke.mjs';
 
 export async function checkContentWidth(window, directory, prefix) {
+  const originalViewport = window.viewportSize();
+  const cdp = await window.context().newCDPSession(window);
   const prose = 'Research notes with enough prose to compare the reading column with the full preview pane. '.repeat(8);
   const table = '| Topic | Current view | Research response and status | Linked questions |\n'
     + '| Categories | Expected reporting categories include commissions and vendors. | Record commissions and vendor payments as proposed primary product groupings. Separate payment purpose from recipient identity. | Q11–Q18 |\n'
@@ -28,7 +30,11 @@ export async function checkContentWidth(window, directory, prefix) {
     await expect(window.locator('#document-title')).toHaveText('Width comparison ' + format);
     await expect(window.locator('#content table')).toHaveCount(3);
     for (const width of [2560, 720]) {
-      await window.setViewportSize({ width, height: width === 2560 ? 1440 : 700 });
+      // Keep Playwright's native-window viewport state untouched. Mixing
+      // setViewportSize with a raw CDP reset leaves screenshot sizing stale.
+      await cdp.send('Emulation.setDeviceMetricsOverride', {
+        width, height: width === 2560 ? 1440 : 700, deviceScaleFactor: 0, mobile: false,
+      });
       for (const outline of [true, false]) {
         if (await window.locator('#sidebar').isVisible() !== outline) await window.locator('#toggle-outline').click();
         for (const contentWidth of ['reading', 'full']) {
@@ -88,8 +94,8 @@ export async function checkContentWidth(window, directory, prefix) {
   await window.emulateMedia({ media: 'screen' });
   await setAppearance(window, { contentWidth: 'reading' });
   await window.keyboard.press('Escape');
-  const cdp = await window.context().newCDPSession(window);
   await cdp.send('Emulation.clearDeviceMetricsOverride');
   await cdp.detach();
+  expect(window.viewportSize()).toEqual(originalViewport);
   console.log('Content width smoke passed: both formats, wide/narrow panes, outline, table overflow, tab modes, and print.');
 }

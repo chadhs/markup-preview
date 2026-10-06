@@ -59,6 +59,9 @@ function createSessions({ read = readDocument, watch = watchDocument, canonicali
           documents.set(id, entry);
           entry.stop = watch(doc.path, (next) => {
             if (documents.get(id) !== entry) return;
+            // Metadata-only notifications must not replace the rendered document.
+            // A real save still refreshes resources even when its text is unchanged.
+            if (!entry.error && next.source === entry.doc.source && next.modified === entry.doc.modified && next.size === entry.doc.size) return;
             if (size() - entry.doc.size + next.size > MAX_SESSION_BYTES) {
               entry.error = 'This update exceeds the 64 MiB open-document limit. Close another tab and save again.';
               publish(false);

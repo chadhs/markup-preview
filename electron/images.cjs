@@ -1,27 +1,13 @@
 const fs = require('node:fs/promises');
 const { constants } = require('node:fs');
 const path = require('node:path');
-const os = require('node:os');
-const { fileURLToPath } = require('node:url');
+const { resolveLocalPath } = require('./local-paths.cjs');
 const { MAX_IMAGE_LINKS } = require('./formats.cjs');
 const { documentResource } = require('./resource-index.cjs');
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const MAX_DOCUMENT_IMAGE_BYTES = 32 * 1024 * 1024;
 const IMAGE_TIMEOUT_MS = 15_000;
 const MAX_IMAGE_REDIRECTS = 5;
-
-function imagePath(documentPath, target) {
-  if (/^file:\/\//i.test(target)) {
-    const url = new URL(target);
-    if (url.hostname && url.hostname !== 'localhost') throw new Error('Only local image files are supported.');
-    return fileURLToPath(url);
-  }
-  let local = target.replace(/^file:/i, '');
-  try { local = decodeURIComponent(local); } catch { /* Keep literal percent signs. */ }
-  if (local.includes('\0') || local.startsWith('//') || /^[a-z][a-z0-9+.-]*:/i.test(local)) throw new Error('Only local image files are supported.');
-  if (local.startsWith('~/')) return path.join(os.homedir(), local.slice(2));
-  return path.resolve(path.dirname(documentPath), local);
-}
 
 function imageMime(file, bytes) {
   const ext = file === null ? null : path.extname(file).toLowerCase();
@@ -103,7 +89,7 @@ function createImageReader(doc, { fetch: fetchImage = globalThis.fetch, timeoutM
       current();
       if (!target) throw new Error('Unsupported image link.');
       const url = /^https?:\/\//i.test(target) ? remoteUrl(target) : null;
-      const file = url ? null : imagePath(doc.path, target);
+      const file = url ? null : resolveLocalPath(doc.path, target);
       const key = url ? url.href : file;
       if (cache.has(key)) return await cache.get(key);
       if (cache.size >= MAX_IMAGE_LINKS) throw new Error('Image limit reached for this document.');

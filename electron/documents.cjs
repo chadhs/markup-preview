@@ -2,12 +2,14 @@ const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
 const { documentFormat } = require('./formats.cjs');
+const { assertLocalPath } = require('./local-paths.cjs');
 const MAX_BYTES = 16 * 1024 * 1024;
 const sizeError = () => new Error('Markup Preview supports files up to 16 MiB.');
 
 async function readDocument(filePath) {
+  assertLocalPath(filePath);
   if (!documentFormat(filePath)) throw new Error('Choose an .org, .md, or .markdown file.');
-  const absolute = path.resolve(filePath);
+  const absolute = assertLocalPath(path.resolve(filePath));
   const handle = await fsp.open(absolute, 'r');
   try {
     const stat = await handle.stat();

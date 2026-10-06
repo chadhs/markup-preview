@@ -7,7 +7,7 @@ import { planRelease, releaseSource, stampVersion, verifyAssets, assertMainRelea
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
 const command = process.argv[2];
 if (command === 'stamp') {
-  await stampVersion(process.cwd(), process.argv[3]);
+  await stampVersion(process.cwd(), process.argv[3] || process.env.RELEASE_VERSION);
 } else {
   assertMainRelease(process.env);
   const source = process.env.RELEASE_SOURCE || process.env.GITHUB_SHA;

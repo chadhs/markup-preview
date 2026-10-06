@@ -1,7 +1,7 @@
 {
   "name": "markup-preview",
   "version": "0.7.0",
-  "description": "A live Org-mode and Markdown file previewer for macOS and Linux",
+  "description": "A live Org-mode and Markdown file previewer for macOS, Linux, and Windows",
   "author": "Chad Stovern",
   "license": "BSD-3-Clause",
   "repository": "github:chadhs/markup-preview",
@@ -23,7 +23,8 @@
     "notices": "node scripts/notices.mjs",
     "icons": "node scripts/icons.mjs",
     "checksums": "node scripts/checksums.mjs",
-    "postinstall": "patch-package --error-on-fail"
+    "postinstall": "patch-package --error-on-fail",
+    "dist:win": "npm run build && electron-builder --win --x64 --publish never"
   },
   "build": {
     "appId": "com.chadhs.markup-preview",
@@ -40,23 +41,6 @@
     "directories": {
       "output": "release"
     },
-    "fileAssociations": [
-      {
-        "ext": "org",
-        "name": "Org document",
-        "role": "Viewer",
-        "mimeType": "text/org"
-      },
-      {
-        "ext": [
-          "md",
-          "markdown"
-        ],
-        "name": "Markdown document",
-        "role": "Viewer",
-        "mimeType": "text/markdown"
-      }
-    ],
     "mac": {
       "target": [
         "dmg",
@@ -67,7 +51,24 @@
       "icon": "build/icon.icns",
       "artifactName": "markup-preview-${version}-${arch}.${ext}",
       "hardenedRuntime": true,
-      "strictVerify": true
+      "strictVerify": true,
+      "fileAssociations": [
+        {
+          "ext": "org",
+          "name": "Org document",
+          "role": "Viewer",
+          "mimeType": "text/org"
+        },
+        {
+          "ext": [
+            "md",
+            "markdown"
+          ],
+          "name": "Markdown document",
+          "role": "Viewer",
+          "mimeType": "text/markdown"
+        }
+      ]
     },
     "linux": {
       "target": [
@@ -94,14 +95,68 @@
         "text/x-markdown"
       ],
       "description": "Read Org and Markdown files and follow changes as you save",
-      "artifactName": "markup-preview-${version}.${ext}"
+      "artifactName": "markup-preview-${version}.${ext}",
+      "fileAssociations": [
+        {
+          "ext": "org",
+          "name": "Org document",
+          "role": "Viewer",
+          "mimeType": "text/org"
+        },
+        {
+          "ext": [
+            "md",
+            "markdown"
+          ],
+          "name": "Markdown document",
+          "role": "Viewer",
+          "mimeType": "text/markdown"
+        }
+      ]
     },
     "extraResources": [
       {
         "from": "build/icons/256x256.png",
         "to": "icon.png"
       }
-    ]
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "markup-preview-${version}-win-${arch}-setup.${ext}",
+      "fileAssociations": [
+        {
+          "ext": "org",
+          "name": "com.chadhs.markup-preview.org",
+          "description": "Org document"
+        },
+        {
+          "ext": [
+            "md",
+            "markdown"
+          ],
+          "name": "com.chadhs.markup-preview.markdown",
+          "description": "Markdown document"
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": false,
+      "createDesktopShortcut": false,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Markup Preview",
+      "deleteAppDataOnUninstall": false,
+      "include": "build/installer.nsh"
+    }
   },
   "dependencies": {
     "dompurify": "^3.4.15",

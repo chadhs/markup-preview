@@ -1,10 +1,8 @@
-const path = require('node:path');
-const os = require('node:os');
-const { fileURLToPath } = require('node:url');
+const { resolveLocalPath } = require('./local-paths.cjs');
 const { documentFormat } = require('./formats.cjs');
 const { documentResource } = require('./resource-index.cjs');
 
-function resolveDocumentLink(documentPath, value) {
+function resolveDocumentLink(documentPath, value, options) {
   if (typeof value !== 'string' || value.length > 8192 || value.includes('\0')) throw new Error('Invalid document link.');
   let target = value, fragment = null;
   const orgSearch = target.indexOf('::');
@@ -19,16 +17,7 @@ function resolveDocumentLink(documentPath, value) {
   }
   const decode = (value) => { try { return decodeURIComponent(value); } catch { return value; } };
   if (fragment) fragment.value = decode(fragment.value);
-  let file;
-  if (/^file:\/\//i.test(target)) {
-    const url = new URL(target);
-    if (url.hostname && url.hostname !== 'localhost') throw new Error('Only local document links are supported.');
-    file = fileURLToPath(url);
-  } else {
-    target = decode(target.replace(/^file:/i, ''));
-    if (target.startsWith('//') || /^[a-z][a-z0-9+.-]*:/i.test(target) || target.includes('\0')) throw new Error('Only local document links are supported.');
-    file = target.startsWith('~/') ? path.join(os.homedir(), target.slice(2)) : path.resolve(path.dirname(documentPath), target);
-  }
+  const file = resolveLocalPath(documentPath, target, options);
   if (!documentFormat(file)) throw new Error('Links can open only .org, .md, or .markdown documents.');
   return { file, fragment };
 }

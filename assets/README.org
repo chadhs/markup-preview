@@ -5,7 +5,7 @@ terracotta and cream colors of the reading interface. Markup Preview keeps
 the original Org Preview artwork unchanged as a nod to its Org-mode origins.
 
 =icon.svg= is the source. Run =npm run icons= with Node 24 to regenerate
-=build/icon.icns= and the Linux PNG sizes in =build/icons/=. The generated
+=build/icon.icns=, =build/icon.ico=, and the Linux PNG sizes in =build/icons/=. The generated
 files are committed so ordinary application builds need no graphics tools.
 
 The artwork and conversion script use the project's BSD-3-Clause license.

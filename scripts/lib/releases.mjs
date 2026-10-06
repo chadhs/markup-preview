@@ -53,7 +53,8 @@ export function assetNames(version) {
   return [
     `markup-preview-${version}-arm64.dmg`, `markup-preview-${version}-arm64.zip`,
     `markup-preview-${version}.AppImage`, `markup-preview-${version}.tar.gz`,
-    'SHA256SUMS-darwin-arm64.txt', 'SHA256SUMS-linux-x64.txt',
+    `markup-preview-${version}-win-x64-setup.exe`,
+    'SHA256SUMS-darwin-arm64.txt', 'SHA256SUMS-linux-x64.txt', 'SHA256SUMS-win32-x64.txt',
   ];
 }
 export async function sha256(file) {
@@ -64,7 +65,7 @@ export async function sha256(file) {
 export async function verifyAssets(directory, version) {
   const expected = assetNames(version).sort();
   const actual = (await readdir(directory)).sort();
-  if (JSON.stringify(expected) !== JSON.stringify(actual)) throw new Error('Release must contain exactly both platform packages and their checksum files.');
+  if (JSON.stringify(expected) !== JSON.stringify(actual)) throw new Error('Release must contain exactly the macOS, Linux, and Windows packages and their checksum files.');
   const checksummed = new Set();
   for (const name of expected.filter((name) => name.startsWith('SHA256SUMS-'))) {
     const lines = (await readFile(path.join(directory, name), 'utf8')).trim().split('\n');
@@ -76,7 +77,7 @@ export async function verifyAssets(directory, version) {
       checksummed.add(match[2]);
     }
   }
-  if (checksummed.size !== 4) throw new Error('All four packages need checksums.');
+  if (checksummed.size !== expected.filter((name) => !name.startsWith('SHA256SUMS-')).length) throw new Error('All packages need checksums.');
   return Promise.all(expected.map(async (name) => {
     const file = path.join(directory, name);
     const info = await stat(file);
@@ -127,9 +128,19 @@ export function releaseNotes({ version, repository, source, changes = '' }) {
     '',
     'Compare downloads with the supplied SHA-256 files using `shasum -a 256` on macOS or `sha256sum` on Linux. To update, quit the app and repeat installation for the new version; there is no in-app updater.',
     '',
+    '### Windows 11: Intel/AMD x64',
+    '',
+    `Download \`markup-preview-${version}-win-x64-setup.exe\` and \`SHA256SUMS-win32-x64.txt\`. Compare the installer hash using PowerShell \`Get-FileHash .\\markup-preview-${version}-win-x64-setup.exe -Algorithm SHA256\` with the checksum file.`,
+    '',
+    'Run the installer as your normal user, then open Markup Preview from Start. No Node.js, npm, or administrator access is needed. Use Open file, Ctrl+O, drag-and-drop, or Explorer → Open with. Choose default file handlers yourself in Windows Settings.',
+    '',
+    'The Windows installer is unsigned. Windows may show SmartScreen or unknown-publisher warnings. Verify the download and only proceed if you trust this release; do not disable Windows security protections. Managed devices may require administrator approval.',
+    '',
+    `To update, quit the app and run the newer installer. To uninstall, use Settings → Apps → Installed apps → Markup Preview. Preferences and your documents are preserved. Native ARM64 builds are not supplied. See the [Windows installation guide](${guide}) for commands and details.`,
+    '',
     '### Known limits',
     '',
-    'Up to 20 UTF-8 documents, 16 MiB per file and 64 MiB of source files total. Tabs do not persist after quitting. Images share limits of 100 references, 8 MiB per image, and 32 MiB per document; remote downloads allow five redirects and time out after 15 seconds. Failed images show placeholders. Mermaid rendering has input, output, and time limits; document configuration and remote assets are unsupported. Editing, full Emacs export parity, unsupported local file types, math, other diagram engines, Babel, Quick Look, Developer ID signing/notarization, and auto-updates remain outside scope. Intel Mac builds are not supplied.',
+    'Up to 20 UTF-8 documents, 16 MiB per file and 64 MiB of source files total. Tabs do not persist after quitting. Network-share, device, and Windows drive-relative paths are unsupported. Images share limits of 100 references, 8 MiB per image, and 32 MiB per document; remote downloads allow five redirects and time out after 15 seconds. Failed images show placeholders. Mermaid rendering has input, output, and time limits; document configuration and remote assets are unsupported. Editing, full Emacs export parity, unsupported local file types, math, other diagram engines, Babel, Quick Look, Developer ID signing/notarization, and auto-updates remain outside scope. Intel Mac builds are not supplied.',
     '',
     `[Release information](https://github.com/${repository}/blob/v${version}/RELEASE-NOTES.org) · [Merged source](https://github.com/${repository}/commit/${source})`,
     '',

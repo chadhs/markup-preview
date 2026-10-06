@@ -1,4 +1,4 @@
-const { fileURLToPath } = require('node:url');
+const { localFileURL } = require('./local-paths.cjs');
 
 // Keep unsupported paths so the reader can explain why they cannot be opened.
 function documentArguments(argv, packaged) {
@@ -11,8 +11,8 @@ function documentArguments(argv, packaged) {
   const separator = args.indexOf('--');
   const argumentsToOpen = separator !== -1 ? args.slice(separator + 1) : args.filter((arg) => !arg.startsWith('-'));
   return argumentsToOpen.map((argument) => {
-    if (argument.startsWith('file:')) {
-      try { return fileURLToPath(argument); } catch { /* File validation reports invalid input. */ }
+    if (/^file:/i.test(argument)) {
+      try { return localFileURL(argument); } catch { /* File validation reports invalid input. */ }
     }
     return argument;
   });

@@ -13,6 +13,7 @@ import { checkHugoMetadata } from './lib/hugo-smoke.mjs';
 import { checkContentWidth } from './lib/content-width-smoke.mjs';
 import { checkOrgImages } from './lib/org-images-smoke.mjs';
 import { checkRemoteImages } from './lib/remote-images-smoke.mjs';
+import { checkLocalPaths } from './lib/local-paths-smoke.mjs';
 
 const directory = await mkdtemp(path.join(tmpdir(), 'markup-preview-smoke-'));
 const file = path.join(directory, 'smoke café 日本語.org');
@@ -164,6 +165,7 @@ try {
   await checkMarkdown(app, window, directory, executablePath ? 'packaged' : 'desktop', appArgs, profileArg, env);
   await checkRemoteImages(window, directory, executablePath ? 'packaged' : 'desktop');
   await checkHugoMetadata(window, directory, executablePath ? 'packaged' : 'desktop');
+  await checkLocalPaths(window, directory);
   await checkContentWidth(window, directory, executablePath ? 'packaged' : 'desktop');
   // Exercise the same picker path used by the Open button without a native dialog.
   await app.evaluate(({ dialog }, welcome) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [welcome] }); }, path.resolve('examples/welcome.org'));

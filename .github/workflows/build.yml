@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-22.04]
+        os: [macos-latest, ubuntu-22.04, windows-2025]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7.0.1
@@ -33,7 +33,7 @@ jobs:
         if: inputs.version != ''
         env:
           RELEASE_VERSION: ${{ inputs.version }}
-        run: node scripts/release.mjs stamp "$RELEASE_VERSION"
+        run: node scripts/release.mjs stamp
       - run: npm ci
       - run: npm run check
       - name: Desktop smoke test on macOS
@@ -42,6 +42,9 @@ jobs:
       - name: Desktop smoke test on Linux
         if: runner.os == 'Linux'
         run: xvfb-run --auto-servernum npm run test:smoke
+      - name: Desktop smoke test on Windows
+        if: runner.os == 'Windows'
+        run: npm run test:smoke
       - name: Package macOS application
         if: runner.os == 'macOS'
         # PR signing is strictly ad-hoc. No signing certificate, private key,
@@ -53,6 +56,14 @@ jobs:
       - name: Package Linux application
         if: runner.os == 'Linux'
         run: npm run dist:linux
+      - name: Package unsigned Windows installer
+        if: runner.os == 'Windows'
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run dist:win
+      - name: Install, test, reinstall, and uninstall Windows application
+        if: runner.os == 'Windows'
+        run: ./scripts/check-windows-installer.ps1
       - name: Validate the Linux AppImage launcher
         if: runner.os == 'Linux'
         run: |
@@ -101,6 +112,7 @@ jobs:
             release/*.zip
             release/*.AppImage
             release/*.tar.gz
+            release/*-win-x64-setup.exe
             release/SHA256SUMS-*.txt
           if-no-files-found: error
       - uses: actions/upload-artifact@v7.0.1

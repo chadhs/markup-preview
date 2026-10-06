@@ -76,7 +76,7 @@ export async function checkMarkdown(app, window, directory, prefix, appArgs, pro
     for (const type of ['dragEnter', 'dragOver', 'drop']) await cdp.send('Input.dispatchDragEvent', { type, x: 500, y: 300, data: { items: [], files: [org, other], dragOperationsMask: 1 } });
     await cdp.detach();
     await expect(window.locator('#document-title')).toHaveText('Another Markdown document');
-    const child = spawn(app.process().spawnfile, [...appArgs, pathToFileURL(file).href, profileArg], { env, stdio: 'ignore' });
+    const child = spawn(await app.evaluate(() => process.execPath), [...appArgs, pathToFileURL(file).href, profileArg], { env, stdio: 'ignore' });
     await new Promise((resolve, reject) => { child.once('error', reject); child.once('exit', resolve); });
     await expect(window.locator('#document-title')).toHaveText('Markdown notebook');
     if (process.platform === 'darwin') {

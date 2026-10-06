@@ -146,18 +146,20 @@ try {
   await expect(window.locator('#error')).toBeHidden();
   // A second CLI invocation must report bad input instead of ignoring it.
   await app.evaluate(({ app }) => {
-    globalThis.cliHandoffs = [];
-    app.on('second-instance', (_event, argv, cwd, data) => globalThis.cliHandoffs.push({ argv, cwd, data }));
+    globalThis.cliHandoffPaths = [];
+    app.on('second-instance', (_event, _argv, _cwd, data) => { globalThis.cliHandoffPaths = data?.documentPaths; });
   });
-  const child = spawn(app.process().spawnfile, [...appArgs, unsupported, profileArg], { env, stdio: 'ignore' });
+  // On Windows Playwright's outer process is cmd.exe, not the Electron binary.
+  const electronExecutable = await app.evaluate(() => process.execPath);
+  const child = spawn(electronExecutable, [...appArgs, unsupported, profileArg], { env, stdio: 'ignore' });
   await new Promise((resolve, reject) => {
     child.once('error', reject);
     child.once('exit', (code) => code === 0 ? resolve() : reject(new Error(`Second instance exited ${code}`)));
   });
-  console.log('CLI handoff received:', JSON.stringify(await app.evaluate(() => globalThis.cliHandoffs)));
+  await expect.poll(() => app.evaluate(() => globalThis.cliHandoffPaths)).toEqual([unsupported]);
   await expect(window.locator('#error')).toContainText('Choose an .org, .md, or .markdown file.');
   // Desktop launchers can pass file:// URLs, including encoded spaces/Unicode.
-  const uriChild = spawn(app.process().spawnfile, [...appArgs, pathToFileURL(path.join(directory, 'links.org')).href, profileArg], { env, stdio: 'ignore' });
+  const uriChild = spawn(electronExecutable, [...appArgs, pathToFileURL(path.join(directory, 'links.org')).href, profileArg], { env, stdio: 'ignore' });
   await new Promise((resolve, reject) => {
     uriChild.once('error', reject);
     uriChild.once('exit', (code) => code === 0 ? resolve() : reject(new Error(`File URL instance exited ${code}`)));

@@ -10,6 +10,9 @@ function assertLocalPath(file, platform = process.platform) {
   if (isDriveAbsolute(file) && platform !== 'win32') throw new Error('Windows drive paths require Windows.');
   // Windows interprets colons after the drive as alternate data streams.
   if (platform === 'win32' && file.slice(isDriveAbsolute(file) ? 2 : 0).includes(':')) throw new Error('Device and alternate-stream paths are not supported.');
+  if (platform === 'win32' && file.split(/[\\/]/).some((part) => /^(?:CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³]|CONIN\$|CONOUT\$)(?:[ .]|$)/i.test(part))) {
+    throw new Error('Windows device names are not supported. Choose a local file.');
+  }
   return file;
 }
 

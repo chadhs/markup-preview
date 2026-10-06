@@ -34,6 +34,7 @@ test('Windows path support never enables network shares, devices, streams, or ot
     '//server/share/a.md', '\\\\server\\share\\a.md', '\\\\?\\C:\\notes\\a.md', '\\\\.\\pipe\\a.md', '\\??\\C:\\notes\\a.md',
     '%5C%5Cserver%5Cshare%5Ca.md', 'file://server/share/a.md', 'file:////server/share/a.md',
     'C:relative.md', 'file:C:relative.md', 'C:/notes/a.md:stream.md', 'javascript:alert.md', 'https://example.com/a.md', 'a%00.md',
+    'C:/notes/NUL.org', 'COM1.md', 'LPT¹.org', 'file:///C:/notes/CON.md',
   ]) assert.throws(() => resolveLocalPath(documentPath, target, options), /local|supported|Invalid/i, target);
   assert.throws(() => localFileURL('file://server/share/a.md', 'win32'), /local/);
   assert.throws(() => localFileURL('file:///C:/bad%5Cpath.md', 'win32'), /encoded/i);
@@ -45,7 +46,7 @@ test('Windows path support never enables network shares, devices, streams, or ot
 
 test('Org and Markdown index Windows links and images with CRLF and original source positions', () => {
   for (const format of ['org', 'markdown']) {
-    for (const image of ['C:/notes/chart.png', 'file:C:/notes/chart.png', 'file:///C:/notes/chart.png']) {
+    for (const image of ['C:/notes/chart.png', 'C:\\notes\\chart.png', 'file:C:/notes/chart.png', 'file:C:\\notes\\chart.png', 'file:///C:/notes/chart.png']) {
       const source = format === 'org'
         ? `* Café 日本語\r\n[[${image}]]\r\n[[file:C:/notes/other.md][Other]]\r\n`
         : `# Café 日本語\r\n\r\n![Chart](${image})\r\n\r\n[Other](C:/notes/other.md)\r\n`;

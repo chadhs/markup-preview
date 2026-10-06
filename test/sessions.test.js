@@ -45,6 +45,21 @@ test('a background error does not replace the active document and clears on reco
   assert.equal(sessions.snapshot().tabs[0].error, '');
 });
 
+test('unchanged watch notifications preserve the document, while saves and recovery still refresh it', async () => {
+  const { sessions, watchers, events } = setup();
+  await sessions.openMany(['/a.org']);
+  const first = sessions.active(), eventCount = events.length;
+  watchers.get('/a.org').change(document('/a.org'));
+  assert.equal(sessions.active(), first);
+  assert.equal(events.length, eventCount);
+  watchers.get('/a.org').change({ ...document('/a.org'), modified: 2 });
+  assert.equal(sessions.active().revision, 2);
+  watchers.get('/a.org').error(Object.assign(new Error('missing'), { code: 'ENOENT' }));
+  watchers.get('/a.org').change({ ...document('/a.org'), modified: 2 });
+  assert.equal(sessions.active().revision, 3);
+  assert.equal(sessions.snapshot().tabs[0].error, '');
+});
+
 test('a failed initial open exposes the empty state and duplicate opens do not rerender', async () => {
   const { sessions, events } = setup({ read: async (path) => {
     if (path === 'bad') throw new Error('Bad file');

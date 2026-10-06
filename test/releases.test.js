@@ -46,19 +46,28 @@ test('stamping changes both version manifests and preserves dependency data', as
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test('all six assets and matching checksums are required before publication', async () => {
+test('all eight assets and matching checksums are required before publication', async () => {
   const dir = await mkdtemp(path.join(tmpdir(), 'markup-assets-'));
   const names = assetNames('0.2.0');
   try {
-    for (const name of names.slice(0, 4)) await writeFile(path.join(dir, name), `Test package ${name}`);
+    for (const name of names.slice(0, 5)) await writeFile(path.join(dir, name), `Test package ${name}`);
     const line = async (name) => `${await sha256(path.join(dir, name))}  ${name}\n`;
-    await writeFile(path.join(dir, names[4]), await line(names[0]) + await line(names[1]));
-    await writeFile(path.join(dir, names[5]), await line(names[2]) + await line(names[3]));
-    assert.equal((await verifyAssets(dir, '0.2.0')).length, 6);
+    await writeFile(path.join(dir, names[5]), await line(names[0]) + await line(names[1]));
+    await writeFile(path.join(dir, names[6]), await line(names[2]) + await line(names[3]));
+    await writeFile(path.join(dir, names[7]), await line(names[4]));
+    assert.equal((await verifyAssets(dir, '0.2.0')).length, 8);
+    await rm(path.join(dir, names[4]));
+    await assert.rejects(verifyAssets(dir, '0.2.0'), /exactly the macOS, Linux, and Windows/);
+    await writeFile(path.join(dir, names[4]), 'Tampered Windows installer');
+    await assert.rejects(verifyAssets(dir, '0.2.0'), /Checksum mismatch/);
+    await writeFile(path.join(dir, names[4]), `Test package ${names[4]}`);
+    await writeFile(path.join(dir, names[7]), '');
+    await assert.rejects(verifyAssets(dir, '0.2.0'), /Invalid checksum/);
+    await writeFile(path.join(dir, names[7]), await line(names[4]));
     await writeFile(path.join(dir, names[0]), 'Tampered');
     await assert.rejects(verifyAssets(dir, '0.2.0'), /Checksum mismatch/);
     await rm(path.join(dir, names[3]));
-    await assert.rejects(verifyAssets(dir, '0.2.0'), /exactly both platform/);
+    await assert.rejects(verifyAssets(dir, '0.2.0'), /exactly the macOS, Linux, and Windows/);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
@@ -108,6 +117,9 @@ test('release notes use the actual version and source, without stale publication
   const notes = releaseNotes({ version: '0.12.0', repository: 'chadhs/markup-preview', source, changes: 'Merged feature A.' });
   assert.match(notes, /markup-preview-0\.12\.0-arm64\.dmg/);
   assert.match(notes, /markup-preview-0\.12\.0\.tar\.gz/);
+  assert.match(notes, /markup-preview-0\.12\.0-win-x64-setup\.exe/);
+  assert.match(notes, /SHA256SUMS-win32-x64\.txt/);
+  assert.match(notes, /unsigned/);
   assert.match(notes, /MARKUP_PREVIEW_VERSION=0\.12\.0/);
   assert.ok(notes.includes('/blob/v0.12.0/README.org#install'));
   assert.ok(notes.includes(source));

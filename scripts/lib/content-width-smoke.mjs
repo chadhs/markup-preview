@@ -72,10 +72,14 @@ export async function checkContentWidth(window, directory, prefix) {
   // Width remains global while each document retains its own preview/source mode.
   await window.locator('#source-tab').click();
   await expect(window.locator('#toggle-content-width')).toBeDisabled();
-  const sourceBounds = await window.locator('#source').boundingBox();
+  // Compare layout dimensions, not screen coordinates: focusing native controls
+  // can scroll a CDP-emulated viewport on Windows. Real window bounds and
+  // overflow are checked separately by the native resize smoke tests.
+  const sourceSize = () => window.locator('#source').evaluate((source) => ({ width: source.clientWidth, height: source.clientHeight }));
+  const originalSourceSize = await sourceSize();
   await setAppearance(window, { contentWidth: 'reading' });
   await window.keyboard.press('Escape');
-  expect(await window.locator('#source').boundingBox()).toEqual(sourceBounds);
+  expect(await sourceSize()).toEqual(originalSourceSize);
   await window.evaluate((file) => window.markupPreview.openPath(file), files[0]);
   await expect(window.locator('#document-title')).toHaveText('Width comparison md');
   await expect(window.locator('#source')).toBeHidden();

@@ -4,11 +4,11 @@
 [[file:build/icons/128x128.png]]
 
 Markup Preview is a standalone previewer for Org-mode and Markdown files
-(more formats to come!) on macOS and Linux. Keep writing in your editor;
+(more formats to come!) on macOS, Linux, and Windows 11. Keep writing in your editor;
 read your notes here, follow their outline, and see the preview update when you save.
 No Emacs installation, account, or cloud service is needed. Your files stay local.
 
-[[#install][Install on macOS or Omarchy]]
+[[#install][Install on macOS, Omarchy, or Windows]]
 [[#macos-build-and-install-locally][Build and install locally on macOS]]
 
 * Screenshots
@@ -81,8 +81,8 @@ that document without switching tabs; its preview renders when you select it.
 A missing file keeps its last readable content and shows an error on its tab
 until it returns.
 
-Use =Ctrl+Tab= and =Ctrl+Shift+Tab= to switch tabs on either platform.
-=Cmd+W= on macOS or =Ctrl+W= on Linux closes the active tab. Add Shift to close
+Use =Ctrl+Tab= and =Ctrl+Shift+Tab= to switch tabs on every platform.
+=Cmd+W= on macOS or =Ctrl+W= on Linux or Windows closes the active tab. Add Shift to close
 the window. Arrow keys, Home, and End navigate a focused tab strip. Closing the
 last tab leaves an Open action. Tabs are not restored after quitting.
 
@@ -283,10 +283,64 @@ Choose the application package below, not GitHub's *Source code* archives.
 | macOS, Apple Silicon     | markup-preview-VERSION-arm64.dmg       |
 | Omarchy / Arch, x86_64    | markup-preview-VERSION.tar.gz          |
 | Linux portable alternative | markup-preview-VERSION.AppImage     |
+| Windows 11, Intel/AMD x64 | markup-preview-VERSION-win-x64-setup.exe |
 
 =VERSION= means the number on the release page, without the =v= prefix.
-Download the matching =SHA256SUMS-darwin-arm64.txt= or
-=SHA256SUMS-linux-x64.txt= too. Optional verification commands are below.
+Download the matching =SHA256SUMS-darwin-arm64.txt=,
+=SHA256SUMS-linux-x64.txt=, or =SHA256SUMS-win32-x64.txt= too. Optional verification commands are below.
+
+** Windows 11: install for your user
+1. Download =markup-preview-VERSION-win-x64-setup.exe= and
+   =SHA256SUMS-win32-x64.txt= from the same release. This installer targets
+   Intel/AMD x64 PCs; native ARM64 installers are not supplied.
+2. Quit any running Markup Preview copies. Run the installer as your normal
+   user. It installs under =%LOCALAPPDATA%\Programs\markup-preview= without
+   administrator access and adds a Start menu shortcut.
+3. Open *Start → Markup Preview*. Click *Open file*, press =Ctrl+O=, or drag
+   an Org or Markdown document from Explorer into the app.
+4. To open documents from Explorer, choose *Open with → Markup Preview*.
+   If it is not listed, choose the executable at the installation path below.
+   Select your preferred default handler through *Settings → Apps → Default apps*.
+
+These installers are unsigned. Windows may show a SmartScreen or
+unknown-publisher warning. Verify the download and only proceed if you trust
+this release. If *More info → Run anyway* is offered, it applies to that
+installer. Do not disable Windows security protections. Managed devices may
+require administrator approval.
+
+To verify the installer, open PowerShell in your download folder. Replace
+=VERSION= with the release number without its =v= prefix:
+
+#+begin_src powershell
+$MarkupPreviewVersion = 'VERSION'
+$InstallerName = "markup-preview-$MarkupPreviewVersion-win-x64-setup.exe"
+$Expected = (Get-Content .\SHA256SUMS-win32-x64.txt | Where-Object {
+    $_.EndsWith("  $InstallerName")
+})
+if (@($Expected).Count -ne 1) { throw 'Missing or ambiguous installer checksum.' }
+$Actual = (Get-FileHash -LiteralPath $InstallerName -Algorithm SHA256).Hash
+if ($Actual -ine $Expected.Substring(0, 64)) { throw 'Checksum mismatch. Download again.' }
+'Checksum verified.'
+#+end_src
+
+Open a document from PowerShell with a quoted path:
+
+#+begin_src powershell
+& "$env:LOCALAPPDATA\Programs\markup-preview\Markup Preview.exe" "$env:USERPROFILE\Documents\notes.org"
+#+end_src
+
+Local document links and images support relative paths, drive-letter paths
+such as =C:/notes/today.org=, and local =file:///C:/notes/today.org= URLs.
+In Markdown, use forward slashes or file URLs and wrap targets containing
+spaces in angle brackets, for example =[Notes](<C:/My Notes/today.md>)=.
+Network shares, device paths, alternate data streams, and ambiguous
+=C:relative.org= paths are unsupported. Use files stored locally.
+
+To update, quit the app and run the newer installer. To uninstall, use
+*Settings → Apps → Installed apps → Markup Preview → Uninstall*.
+Uninstall removes the program, shortcut, and its file-handler registrations.
+Your documents and preferences remain. Preferences live under
+=%APPDATA%\Markup Preview=.
 
 ** macOS: install in Applications
 1. Download the =arm64.dmg= file. In About This Mac, the Chip field should
@@ -498,7 +552,8 @@ Your files stay local. Opening a preview does not modify the document.
 There is no in-app updater yet. Download the new release and quit the old
 app first. On macOS, replace the Applications copy. On Omarchy, rerun the
 tar installation and desktop-entry blocks with the new version; they update
-the command link and icon path. Your documents are independent of the app.
+the command link and icon path. On Windows, run the newer installer.
+Your documents are independent of the app.
 
 On Wayland, Markup Preview avoids Chromium's incompatible Vulkan startup paths
 and uses OpenGL acceleration. No extra launcher flags are needed. An explicit
@@ -546,6 +601,7 @@ For a personal Mac installation, follow [[#macos-build-and-install-locally][the 
 #+begin_src sh
 npm run dist:mac    # .dmg and .zip for the Mac's architecture
 npm run dist:linux  # .AppImage and .tar.gz for the Linux machine's architecture
+npm run dist:win    # Unsigned Windows x64 NSIS installer .exe
 npm run pack       # Unpacked application for a quick packaging check
 npm run checksums  # SHA-256 sums for the packages in release/
 #+end_src
@@ -566,8 +622,8 @@ npm run icons       # Regenerate native icons from assets/icon.svg
 On a headless Linux machine, run the desktop smoke test with
 =xvfb-run --auto-servernum npm run test:smoke=.
 
-GitHub Actions runs tests, desktop smoke checks, and packaging on macOS and
-Linux. Successful runs provide prototype installers as workflow artifacts.
+GitHub Actions runs tests, desktop smoke checks, and packaging on macOS,
+Linux, and Windows Server 2025. Successful runs provide prototype installers as workflow artifacts.
 The smoke test requires Chromium sandboxing and checks rendering, source
 view, themes, search and scroll preservation, Unicode file opening,
 multi-file drops, tabs, Mermaid diagrams, input errors, CLI handoff, saves, atomic replacement,
@@ -579,12 +635,36 @@ Screenshots are saved in =test-results/=.
 The smoke test uses a disposable profile. To test a packaged executable, set
 =MARKUP_PREVIEW_EXECUTABLE= to its absolute path and run =node scripts/smoke.mjs=.
 On macOS it also checks Finder-style file events and the native Open command
-after the last window closes. CI runs this suite against the macOS ZIP artifact.
+after the last window closes. CI runs this suite against the macOS ZIP artifact, Linux tar artifact,
+and the installed Windows executable. Windows CI also verifies per-user
+installation, Start menu and file-handler registration, reinstall, and
+uninstall with application data preserved.
 Native Mac checks covered file picking, Finder opening and dragging, browser
 and mail links, and keyboard shortcuts on Apple Silicon. The Mac packages
 are ad-hoc signed and unnotarized; first launch requires app-specific
 approval. Keep one installed copy to avoid ambiguous Finder Open With entries.
 
+** Windows 11 acceptance before release
+A passing Windows Server CI job does not complete Windows 11 desktop
+acceptance. Before merging Windows support, download the Windows installer
+artifact from the pull request checks and spend 30–60 minutes on an Intel/AMD
+Windows 11 PC or x64 VM. Record the OS version, app version, and results in
+the pull request. Merging to =main= automatically publishes a release.
+
+1. Install as a normal user; check the icon, Start menu launch, Explorer
+   *Open with*, and paths with spaces and Unicode. Keep an existing default
+   editor selected and confirm that it remains your chosen handler.
+2. Open multiple Org and Markdown files by picker, Explorer, drag-and-drop,
+   and PowerShell, including while the app is already running. Verify local
+   links and images with drive paths, relative paths, file URLs, and CRLF.
+3. Save from your editor, including atomic replacement and delete/recreate.
+   Verify live reload, tabs, source view, search, Mermaid diagrams, and shortcuts.
+4. At 100% and 150% display scaling, check title-bar buttons, maximize,
+   restore, fullscreen, themes, and toolbar controls at the minimum window size.
+5. Reinstall and then uninstall. Verify preferences survive reinstall, file
+   handlers and shortcuts are removed on uninstall, and documents remain intact.
+
+** Test maintenance
 Keep the automated tests in =test/= and =scripts/smoke.mjs=: they protect
 rendering, file watching, sandboxing, and release publication. Test fixtures
 are temporary, and logs/screenshots belong in ignored =test-results/= or
@@ -638,9 +718,9 @@ select =main=. This uses the same checks, checksum verification, and retry
 rules. A manual run for an already-published main commit does nothing. Direct
 pushes containing skip markers can be recovered this way too.
 
-Only the publisher job has repository write permission. It checks all four
+Only the publisher job has repository write permission. It checks all five
 packages against their checksums, creates a versioned source commit and tag,
-uploads six assets to a draft, then publishes after every upload succeeds.
+uploads eight assets to a draft, then publishes after every upload succeeds.
 The tagged commit has the merged main commit as its parent. It updates only
 the package versions, so checking out a tag reproduces the released version.
 The workflow never pushes a version-bump commit back to =main= or triggers

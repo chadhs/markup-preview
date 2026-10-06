@@ -13,6 +13,7 @@ import { checkHugoMetadata } from './lib/hugo-smoke.mjs';
 import { checkContentWidth } from './lib/content-width-smoke.mjs';
 import { checkOrgImages } from './lib/org-images-smoke.mjs';
 import { checkRemoteImages } from './lib/remote-images-smoke.mjs';
+import { checkLocalPaths } from './lib/local-paths-smoke.mjs';
 
 const directory = await mkdtemp(path.join(tmpdir(), 'markup-preview-smoke-'));
 const file = path.join(directory, 'smoke café 日本語.org');
@@ -144,14 +145,21 @@ try {
   await expect(window.locator('#source')).toContainText('Saved large document.', { timeout: 30000 });
   await expect(window.locator('#error')).toBeHidden();
   // A second CLI invocation must report bad input instead of ignoring it.
-  const child = spawn(app.process().spawnfile, [...appArgs, unsupported, profileArg], { env, stdio: 'ignore' });
+  await app.evaluate(({ app }) => {
+    globalThis.cliHandoffPaths = [];
+    app.on('second-instance', (_event, _argv, _cwd, data) => { globalThis.cliHandoffPaths = data?.documentPaths; });
+  });
+  // On Windows Playwright's outer process is cmd.exe, not the Electron binary.
+  const electronExecutable = await app.evaluate(() => process.execPath);
+  const child = spawn(electronExecutable, [...appArgs, unsupported, profileArg], { env, stdio: 'ignore' });
   await new Promise((resolve, reject) => {
     child.once('error', reject);
     child.once('exit', (code) => code === 0 ? resolve() : reject(new Error(`Second instance exited ${code}`)));
   });
+  await expect.poll(() => app.evaluate(() => globalThis.cliHandoffPaths)).toEqual([unsupported]);
   await expect(window.locator('#error')).toContainText('Choose an .org, .md, or .markdown file.');
   // Desktop launchers can pass file:// URLs, including encoded spaces/Unicode.
-  const uriChild = spawn(app.process().spawnfile, [...appArgs, pathToFileURL(path.join(directory, 'links.org')).href, profileArg], { env, stdio: 'ignore' });
+  const uriChild = spawn(electronExecutable, [...appArgs, pathToFileURL(path.join(directory, 'links.org')).href, profileArg], { env, stdio: 'ignore' });
   await new Promise((resolve, reject) => {
     uriChild.once('error', reject);
     uriChild.once('exit', (code) => code === 0 ? resolve() : reject(new Error(`File URL instance exited ${code}`)));
@@ -164,6 +172,7 @@ try {
   await checkMarkdown(app, window, directory, executablePath ? 'packaged' : 'desktop', appArgs, profileArg, env);
   await checkRemoteImages(window, directory, executablePath ? 'packaged' : 'desktop');
   await checkHugoMetadata(window, directory, executablePath ? 'packaged' : 'desktop');
+  await checkLocalPaths(window, directory);
   await checkContentWidth(window, directory, executablePath ? 'packaged' : 'desktop');
   // Exercise the same picker path used by the Open button without a native dialog.
   await app.evaluate(({ dialog }, welcome) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [welcome] }); }, path.resolve('examples/welcome.org'));

@@ -1,10 +1,23 @@
 #+title: Markup Preview release information
 
 * Release policy
-Each push to =main= publishes a new minor release after both platform checks
+Each push to =main= publishes a new minor release after all three platform checks
 pass. The first version is =0.1.0=, followed by =0.2.0=, =0.3.0=, and so on.
 The GitHub release page contains the exact version, changes, downloads,
 and checksums. Pull requests do not publish releases.
+
+* Windows 11 support
+- Add an unsigned per-user NSIS installer for Intel/AMD x64 Windows 11 PCs,
+  a native icon, Start menu shortcut, and Org/Markdown file-handler registrations.
+- Resolve Windows drive paths, relative paths, and local file URLs in links
+  and images. Distinguish duplicate filenames using Windows path separators.
+- Parse CRLF Org documents while retaining original source positions for
+  verified links, images, and diagrams.
+- Build and smoke-test on Windows Server 2025, including installation,
+  reinstall, and uninstall with preferences preserved. Include Windows checksums
+  and installation guidance in releases.
+- Complete the README's Windows 11 desktop acceptance checks before merging.
+  Native ARM64 builds, signing, and automatic updates are not included.
 
 * Markup Preview and Markdown for v0.7.0
 - Rename the app, package, command, repository, and download artifacts to
@@ -67,7 +80,7 @@ and checksums. Pull requests do not publish releases.
 
 * A live reader for Org and Markdown files
 Markup Preview opens local =.org=, =.md=, and =.markdown= files and refreshes the document when you
-save in your editor. It runs on macOS and Linux without requiring Emacs,
+save in your editor. It runs on macOS, Linux, and Windows 11 without requiring Emacs,
 an account, or a cloud service.
 
 The application includes:
@@ -92,15 +105,18 @@ Replace =VERSION= below with the version shown on the GitHub release page.
 | macOS, Apple Silicon     | markup-preview-VERSION-arm64.zip   |
 | Linux, x86_64            | markup-preview-VERSION.AppImage        |
 | Linux, x86_64            | markup-preview-VERSION.tar.gz          |
+| Windows 11, x64          | markup-preview-VERSION-win-x64-setup.exe |
 
 Builds include a platform-specific =SHA256SUMS-*.txt= file. Compare a
 package's SHA-256 with that file before installing. On macOS use
-=shasum -a 256 <filename>=; on Linux use =sha256sum <filename>=.
+=shasum -a 256 <filename>=; on Linux use =sha256sum <filename>=; on Windows
+use PowerShell =Get-FileHash <filename> -Algorithm SHA256=.
 
 * Install and update
-The [[file:README.org][README installation guide]] covers both platforms step by step:
+The [[file:README.org][README installation guide]] covers all three platforms step by step:
 - macOS Applications installation, app-specific first-launch approval, and Finder opening.
 - Omarchy's FUSE-free tar installation, CLI shortcut, and optional app launcher.
+- Windows per-user installation, unsigned-installer guidance, and Explorer opening.
 - AppImage alternatives, checksum verification, updates, and first use.
 
 Downloaded releases need no Node.js, npm, or Emacs. Omarchy was the native
@@ -122,11 +138,12 @@ AUR or pacman package yet.
   the maintainer's final check.
 
 * Validation and license
-CI checks the implementation on macOS and Linux. Earlier Org Preview
+CI checks the implementation on macOS, Linux, and Windows Server 2025. Earlier Org Preview
 releases were also tested on real Omarchy Wayland/XWayland and with native
 Mac file actions. CI tests the Mac ZIP application
 and validates the extracted AppImage's desktop entry, icon, and sandbox flags.
-The README summarizes platform verification. Automated tests stay in the
+Windows CI checks the installed executable, file handlers, reinstall, and uninstall.
+The README includes the required Windows 11 desktop acceptance checklist. Automated tests stay in the
 repository; per-run screenshots and build logs are CI artifacts.
 
 Markup Preview and its artwork use BSD-3-Clause. The Org parser, Orga, uses MIT.

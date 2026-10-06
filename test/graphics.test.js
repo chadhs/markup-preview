@@ -25,9 +25,9 @@ test('Wayland avoids both Vulkan initialization paths and preserves other disabl
   }
 });
 
-test('explicit X11, X11 sessions, and macOS retain their graphics settings', () => {
+test('explicit X11, X11 sessions, macOS, and Windows retain their graphics settings', () => {
   const initial = { 'ozone-platform': 'x11', 'disable-features': 'ExistingFeature' };
   assert.deepEqual(configure('linux', { XDG_SESSION_TYPE: 'wayland', WAYLAND_DISPLAY: 'wayland-1' }, initial), initial);
   assert.deepEqual(configure('linux', { XDG_SESSION_TYPE: 'x11' }), {});
-  assert.deepEqual(configure('darwin', { WAYLAND_DISPLAY: 'wayland-1' }), {});
+  for (const platform of ['darwin', 'win32']) assert.deepEqual(configure(platform, { WAYLAND_DISPLAY: 'wayland-1' }), {});
 });

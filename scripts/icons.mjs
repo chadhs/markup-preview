@@ -24,4 +24,20 @@ const header = Buffer.alloc(8);
 header.write('icns', 0, 'ascii');
 header.writeUInt32BE(8 + chunks.reduce((size, chunk) => size + chunk.length, 0), 4);
 await writeFile(new URL('icon.icns', output), Buffer.concat([header, ...chunks]));
-console.log('Generated macOS ICNS and Linux PNG icons from assets/icon.svg.');
+// ICO supports PNG entries. Include small sizes as well as the 256px shell icon.
+const sizes = [16, 32, 48, 64, 128, 256];
+const directory = Buffer.alloc(6 + 16 * sizes.length);
+directory.writeUInt16LE(1, 2);
+directory.writeUInt16LE(sizes.length, 4);
+let offset = directory.length;
+for (const [index, size] of sizes.entries()) {
+  const entry = 6 + index * 16, png = pngs.get(size);
+  directory[entry] = directory[entry + 1] = size === 256 ? 0 : size;
+  directory.writeUInt16LE(1, entry + 4);
+  directory.writeUInt16LE(32, entry + 6);
+  directory.writeUInt32LE(png.length, entry + 8);
+  directory.writeUInt32LE(offset, entry + 12);
+  offset += png.length;
+}
+await writeFile(new URL('icon.ico', output), Buffer.concat([directory, ...sizes.map((size) => pngs.get(size))]));
+console.log('Generated macOS ICNS, Windows ICO, and Linux PNG icons from assets/icon.svg.');

@@ -7,13 +7,15 @@ import { frontmatter } from 'micromark-extension-frontmatter';
 import { frontmatterFromMarkdown } from 'mdast-util-frontmatter';
 import { orgImageTarget } from '../electron/org-image-links.mjs';
 import { orgMetadata, markdownMetadata } from './metadata.js';
+import pathSyntax from '../electron/path-syntax.cjs';
+const { isDriveAbsolute, hasScheme } = pathSyntax;
 const { MAX_IMAGE_LINKS } = formats;
 
 export const plainText = (node) => node.value ?? node.alt ?? (node.children || []).map(plainText).join('');
 export function localImageUrl(target) {
   if (typeof target !== 'string' || target.length > 8192) return false;
   const local = target.replace(/^file:/i, '');
-  return !/^[a-z][a-z0-9+.-]*:/i.test(local) && !local.startsWith('//')
+  return (!hasScheme(local) || isDriveAbsolute(local)) && !local.startsWith('//')
     && /\.(?:png|jpe?g|gif|webp|svg)$/i.test(local);
 }
 export function remoteImageUrl(target) {
@@ -22,13 +24,43 @@ export function remoteImageUrl(target) {
 }
 export const externalUrl = (url) => /^(?:https?:\/\/|mailto:)/i.test(url);
 export const localLinkUrl = (url) => typeof url === 'string' && url.length <= 8192
-  && !url.startsWith('#') && (!/^[a-z][a-z0-9+.-]*:/i.test(url.split('::')[0]) || /^file:/i.test(url));
+  && !url.startsWith('#') && (!hasScheme(url.split('::')[0]) || isDriveAbsolute(url) || /^file:/i.test(url));
+
+// Orga's lexer expects LF. Map node boundaries back to the original UTF-16
+// offsets so image/link verification still uses the untouched CRLF document.
+function parseOrg(source) {
+  if (!source.includes('\r\n')) return parse(source);
+  const removed = [];
+  const normalized = source.replace(/\r\n/g, (_match, offset) => {
+    removed.push(offset - removed.length);
+    return '\n';
+  });
+  const tree = parse(normalized);
+  function originalPoint(point) {
+    let low = 0, high = removed.length;
+    while (low < high) {
+      const middle = Math.floor((low + high) / 2);
+      if (removed[middle] < point.offset) low = middle + 1;
+      else high = middle;
+    }
+    return { ...point, offset: point.offset + low };
+  }
+  function restore(node) {
+    // Nodes may share position objects; replace rather than mutate them.
+    if (node.position) node.position = {
+      start: originalPoint(node.position.start), end: originalPoint(node.position.end),
+    };
+    for (const child of node.children || []) restore(child);
+  }
+  restore(tree);
+  return tree;
+}
 
 // No DOM or highlighting dependencies: this module is also bundled for Electron.
 export function analyzeDocument({ source, format }) {
   if (!['org', 'markdown'].includes(format)) throw new Error('Unsupported document format.');
   const org = format === 'org' ? orgMetadata(source) : null;
-  const tree = format === 'org' ? parse(org.source)
+  const tree = format === 'org' ? parseOrg(org.source)
     : fromMarkdown(source, { extensions: [gfm(), frontmatter(['yaml', 'toml'])], mdastExtensions: [gfmFromMarkdown(), frontmatterFromMarkdown(['yaml', 'toml'])] });
   const images = [], diagrams = [], links = [];
   const definitions = new Map(), nodes = new WeakMap();

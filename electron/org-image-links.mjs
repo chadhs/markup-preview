@@ -1,3 +1,5 @@
+import pathSyntax from './path-syntax.cjs';
+const { isDriveAbsolute, hasScheme } = pathSyntax;
 // Org inline images are links without a description.
 export function orgImageTarget(reference) {
   if (typeof reference !== 'string' || reference.length > 8192) return null;
@@ -10,6 +12,6 @@ export function orgImageTarget(reference) {
     } catch { return null; }
   }
   const local = target.replace(/^file:/i, '');
-  if (/^[a-z][a-z0-9+.-]*:/i.test(local) || !/\.(?:png|jpe?g|gif|webp|svg)$/i.test(local)) return null;
+  if ((hasScheme(local) && !isDriveAbsolute(local)) || !/\.(?:png|jpe?g|gif|webp|svg)$/i.test(local)) return null;
   return target;
 }

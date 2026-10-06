@@ -4,12 +4,14 @@ const { pathToFileURL } = require('node:url');
 const { createSessions } = require('./sessions.cjs');
 const { createDiagramRenderer } = require('./diagrams.cjs');
 const { documentArguments } = require('./arguments.cjs');
+const { assertLocalPath } = require('./local-paths.cjs');
 const { configureGraphics } = require('./graphics.cjs');
 const { titlebarOptions, updateTitlebar } = require('./titlebar.cjs');
 const { DOCUMENT_EXTENSIONS } = require('./formats.cjs');
 const { documentResource } = require('./resource-index.cjs');
 const { openDocumentLink } = require('./links.cjs');
 app.setName('Markup Preview');
+if (process.platform === 'win32') app.setAppUserModelId('com.chadhs.markup-preview');
 configureGraphics(app.commandLine);
 let win;
 let initialized = false;
@@ -71,13 +73,19 @@ function createWindow() {
   win.on('closed', () => { sessions.dispose(); diagrams.cancel(); win = undefined; });
   win.loadFile(path.join(__dirname, '../dist/index.html'));
 }
-const locked = app.requestSingleInstanceLock();
+// Chromium can reorder or omit second-instance argv on Windows. Pass the
+// already-parsed paths through Electron's structured handoff instead.
+const locked = app.requestSingleInstanceLock({ documentPaths: pendingPaths });
 if (!locked) app.quit();
 else {
   app.on('open-file', (event, filePath) => { event.preventDefault(); requestDocuments([filePath]); });
-  app.on('second-instance', (_event, argv, cwd) => {
-    const paths = documentArguments(argv, app.isPackaged);
-    if (paths.length) requestDocuments(paths.map((file) => path.resolve(cwd, file)));
+  app.on('second-instance', (_event, argv, cwd, data) => {
+    const paths = Array.isArray(data?.documentPaths) && data.documentPaths.every((file) => typeof file === 'string')
+      ? data.documentPaths : documentArguments(argv, app.isPackaged);
+    if (paths.length) requestDocuments(paths.map((file) => {
+      try { return path.resolve(cwd, assertLocalPath(file)); }
+      catch { return file; } // Let the document reader display the validation error.
+    }));
     else if (!win) createWindow();
     win?.restore(); win?.focus();
   });

@@ -16,6 +16,10 @@ export function localImageUrl(target) {
   return !/^[a-z][a-z0-9+.-]*:/i.test(local) && !local.startsWith('//')
     && /\.(?:png|jpe?g|gif|webp|svg)$/i.test(local);
 }
+export function remoteImageUrl(target) {
+  if (typeof target !== 'string' || target.length > 8192 || !/^https?:\/\//i.test(target)) return false;
+  try { return ['http:', 'https:'].includes(new URL(target).protocol); } catch { return false; }
+}
 export const externalUrl = (url) => /^(?:https?:\/\/|mailto:)/i.test(url);
 export const localLinkUrl = (url) => typeof url === 'string' && url.length <= 8192
   && !url.startsWith('#') && (!/^[a-z][a-z0-9+.-]*:/i.test(url.split('::')[0]) || /^file:/i.test(url));
@@ -50,14 +54,14 @@ export function analyzeDocument({ source, format }) {
       const definition = definitions.get(node.identifier);
       if (node.type === 'image' || node.type === 'imageReference') {
         const target = node.url ?? definition?.url;
-        if (localImageUrl(target) || /^file:\/\//i.test(target || '')) image = target;
+        if (localImageUrl(target) || remoteImageUrl(target) || /^file:\/\//i.test(target || '')) image = target;
       }
       if (node.type === 'link' || node.type === 'linkReference') link = node.url ?? definition?.url;
       if (node.type === 'code' && node.lang?.toLowerCase() === 'mermaid') code = node.value;
     }
     const indexed = {};
     if (image && images.length < MAX_IMAGE_LINKS && reference.length <= 8192) {
-      indexed.image = { ...descriptor, id: images.length, target: image, label: image,
+      indexed.image = { ...descriptor, id: images.length, target: image, label: format === 'org' ? node.path?.value || image : image,
         ...(format === 'markdown' ? { alt: node.alt || '' } : {}) };
       images.push(indexed.image);
     }

@@ -1,20 +1,17 @@
 import { createCodeHighlighter } from './highlight.js';
-import formats from '../electron/formats.cjs';
 import { orgImageTarget } from '../electron/org-image-links.mjs';
 
 import { escapeHtml } from './html.js';
 import { analyzeDocument } from './document-analysis.js';
-const { MAX_IMAGE_LINKS } = formats;
 const ignored = new Set(['stars', 'opening', 'closing', 'link.path', 'list.item.bullet', 'emptyLine', 'table.columnSeparator', 'table.hr']);
 const styles = { bold: 'strong', italic: 'em', underline: 'u', strikeThrough: 's', strikethrough: 's', code: 'code', verbatim: 'code' };
 
 export function renderOrg(source, fallbackTitle = 'Untitled') {
   const analysis = analyzeDocument({ source, format: 'org' });
-  const { tree, links } = analysis;
+  const { tree, links, images } = analysis;
   const anchors = Object.create(null);
   const highlightCode = createCodeHighlighter();
   const outline = [];
-  const images = [];
   const diagrams = [];
   const diagramNodes = new WeakMap();
   let diagramCharacters = 0;
@@ -54,6 +51,7 @@ export function renderOrg(source, fallbackTitle = 'Untitled') {
       if (result?.type === 'keyword' && result.key.toLowerCase() === 'results'
         && (result.value || '') === (block.attributes?.name || '')
         && link?.type === 'link' && orgImageTarget(raw(link))
+        && !/^https?:\/\//i.test(orgImageTarget(raw(link)))
         && !source.slice(block.position.end.offset, result.position.start.offset).trim()
         && !source.slice(result.position.end.offset, link.position.start.offset).trim()
         && /^[ \t]*(?:\r?\n[ \t]*(?:\r?\n|$)|$)/.test(source.slice(link.position.end.offset))) {
@@ -86,11 +84,10 @@ export function renderOrg(source, fallbackTitle = 'Untitled') {
       case 'link': {
         const pathValue = node.path?.value || '';
         const reference = raw(node);
-        if (node.path?.protocol === 'file' && orgImageTarget(reference)) {
-          if (images.length >= MAX_IMAGE_LINKS) return `<span class="image-placeholder">Image limit reached: ${escapeHtml(pathValue)}</span>`;
-          const id = images.length;
-          images.push({ id, reference, start: node.position.start.offset, end: node.position.end.offset, label: pathValue });
-          return `<span class="image-preview" data-image-id="${id}" data-image-start="${node.position.start.offset}"><span class="image-placeholder">Loading image: ${escapeHtml(pathValue)}</span></span>`;
+        if (orgImageTarget(reference)) {
+          const image = analysis.nodes.get(node)?.image;
+          if (!image) return `<span class="image-placeholder">Image limit reached: ${escapeHtml(pathValue)}</span>`;
+          return `<span class="image-preview" data-image-id="${image.id}" data-image-start="${image.start}"><span class="image-placeholder">Loading image: ${escapeHtml(image.label)}</span></span>`;
         }
         const local = analysis.nodes.get(node)?.link;
         if (local) return `<a href="#" data-document-link="${local.id}">${children(node) || escapeHtml(local.target)}</a>`;

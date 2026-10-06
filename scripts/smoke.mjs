@@ -12,6 +12,7 @@ import { checkMarkdown } from './lib/markdown-smoke.mjs';
 import { checkHugoMetadata } from './lib/hugo-smoke.mjs';
 import { checkContentWidth } from './lib/content-width-smoke.mjs';
 import { checkOrgImages } from './lib/org-images-smoke.mjs';
+import { checkRemoteImages } from './lib/remote-images-smoke.mjs';
 
 const directory = await mkdtemp(path.join(tmpdir(), 'markup-preview-smoke-'));
 const file = path.join(directory, 'smoke café 日本語.org');
@@ -161,6 +162,7 @@ try {
   await checkOrgImages(window, directory, executablePath ? 'packaged' : 'desktop');
   await checkTabsAndOrgDiagrams(app, window, directory, executablePath ? 'packaged' : 'desktop');
   await checkMarkdown(app, window, directory, executablePath ? 'packaged' : 'desktop', appArgs, profileArg, env);
+  await checkRemoteImages(window, directory, executablePath ? 'packaged' : 'desktop');
   await checkHugoMetadata(window, directory, executablePath ? 'packaged' : 'desktop');
   await checkContentWidth(window, directory, executablePath ? 'packaged' : 'desktop');
   // Exercise the same picker path used by the Open button without a native dialog.
@@ -236,7 +238,7 @@ try {
   await expect(window.locator('html')).toHaveAttribute('data-theme', 'solarized-dark');
   expect(errors).toEqual([]);
   expect(stderr).not.toContain('not compatible with Vulkan');
-  console.log(`Desktop smoke passed (${executablePath ? 'packaged' : 'development'}): open, file-backed drops, Unicode paths, input errors, CLI handoff${process.platform === 'darwin' ? ', macOS window reopening' : ''}, render, source, themes, syntax highlighting, local images, tabs, Mermaid, search, scroll preservation, external saves, atomic replacement, delete/recreate, watcher switching, large documents, sandbox, HTML safety, and no Vulkan compatibility warning.`);
+  console.log(`Desktop smoke passed (${executablePath ? 'packaged' : 'development'}): open, file-backed drops, Unicode paths, input errors, CLI handoff${process.platform === 'darwin' ? ', macOS window reopening' : ''}, render, source, themes, syntax highlighting, local and remote images, tabs, Mermaid, search, scroll preservation, external saves, atomic replacement, delete/recreate, watcher switching, large documents, sandbox, HTML safety, and no Vulkan compatibility warning.`);
 } finally {
   await app?.close();
   await rm(directory, { recursive: true, force: true });

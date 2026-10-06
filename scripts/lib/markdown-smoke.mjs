@@ -9,7 +9,7 @@ export async function checkMarkdown(app, window, directory, prefix, appArgs, pro
   const file = path.join(directory, 'markdown café 日本語.MD');
   const org = path.join(directory, 'linked.org');
   const other = path.join(directory, 'other.markdown');
-  const source = '# Markdown notebook\n\n**Readable** ~~old~~ text and a note[^n].\n\n- [x] Done\n- [ ] Later\n\n| Name | Value |\n| --- | ---: |\n| one | 1 |\n\n![Local chart][image]\n\n[image]: ./markdown-chart.svg\n\n```js\nconst answer = 42;\n```\n\n> ~~~mermaid\n> flowchart LR\n> A-->B\n> ~~~\n\n[Org heading](linked.org::#target) [Missing](missing.md) [Missing heading](linked.org::#absent)\n\n## Destination\n\n[Top](#markdown-notebook)\n\n[^n]: A footnote.\n\n<script>globalThis.markdownCompromised = true</script>\n\n![Remote](https://tracker.invalid/pixel.png)';
+  const source = '# Markdown notebook\n\n**Readable** ~~old~~ text and a note[^n].\n\n- [x] Done\n- [ ] Later\n\n| Name | Value |\n| --- | ---: |\n| one | 1 |\n\n![Local chart][image]\n\n[image]: ./markdown-chart.svg\n\n```js\nconst answer = 42;\n```\n\n> ~~~mermaid\n> flowchart LR\n> A-->B\n> ~~~\n\n[Org heading](linked.org::#target) [Missing](missing.md) [Missing heading](linked.org::#absent)\n\n## Destination\n\n[Top](#markdown-notebook)\n\n[^n]: A footnote.\n\n<script>globalThis.markdownCompromised = true</script>\n\n[Remote image link](https://tracker.invalid/pixel.png)';
   await writeFile(file, source);
   await writeFile(other, '# Another Markdown document\n\n[Back](./markdown%20caf%C3%A9%20%E6%97%A5%E6%9C%AC%E8%AA%9E.MD#destination)');
   await writeFile(org, '#+title: Linked Org\n* Target\n:PROPERTIES:\n:CUSTOM_ID: target\n:END:\n[[file:markdown café 日本語.MD#destination][Back to Markdown]]');

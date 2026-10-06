@@ -53,8 +53,9 @@ Reference links work too: [read the Markdown guide][guide].
 > The file is yours. The editor is your choice.
 
 Local images use `![Description](images/chart.png)` or reference definitions.
-Remote images remain links. HTML stays literal, and your documents cannot
-fetch network resources.[^local]
+HTTP and HTTPS images load automatically, including URLs without file extensions.
+Opening a document with remote images contacts their hosts. HTML stays literal,
+and image failures leave the rest of your document readable.[^local]
 
 [guide]: https://commonmark.org/help/
 [^local]: Clicking a web link opens your browser. Local document links stay in the app.

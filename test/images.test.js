@@ -24,7 +24,7 @@ test('local images resolve relative paths, parents, absolute paths, file URLs, s
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test('image reads reject forged references, remote paths, directories, invalid files and oversized files', async () => {
+test('image reads reject forged references, remote file hosts, directories, invalid files and oversized files', async () => {
   const dir = await mkdtemp(path.join(tmpdir(), 'markup-preview-images-'));
   try {
     await writeFile(path.join(dir, 'bad.png'), '<script>not an image</script>');
@@ -32,7 +32,7 @@ test('image reads reject forged references, remote paths, directories, invalid f
     const handle = await open(path.join(dir, 'large.png'), 'w');
     await handle.truncate(MAX_IMAGE_BYTES + 1);
     await handle.close();
-    const references = ['[[file:missing.png]]', '[[file:bad.png]]', '[[file:folder.png]]', '[[file:large.png]]', '[[https://example.com/a.png]]', '[[file://remote-host/a.png]]'];
+    const references = ['[[file:missing.png]]', '[[file:bad.png]]', '[[file:folder.png]]', '[[file:large.png]]', '[[file://remote-host/a.png]]'];
     const doc = { path: path.join(dir, 'notes.org'), source: references.join('\n') };
     const read = createImageReader(doc);
     for (const reference of references) {

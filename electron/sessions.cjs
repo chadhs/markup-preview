@@ -13,6 +13,10 @@ function createSessions({ read = readDocument, watch = watchDocument, canonicali
   let activeId = null, sequence = 0, nextId = 0, generation = 0, queue = Promise.resolve();
   const size = () => [...documents.values()].reduce((total, entry) => total + entry.doc.size, 0);
   const active = () => documents.get(activeId);
+  function cancelImages(entry) {
+    entry?.reader?.cancel?.();
+    if (entry) entry.reader = undefined;
+  }
   function snapshot(includeDocument = true) {
     return { sequence, activeId, tabs: [...documents.values()].map(({ doc, error }) => ({
       id: doc.id, path: doc.path, name: doc.name, revision: doc.revision, error,
@@ -27,7 +31,7 @@ function createSessions({ read = readDocument, watch = watchDocument, canonicali
   function activate(id, fragment = null) {
     if (!documents.has(id)) throw new Error('This document is no longer open.');
     const switching = activeId !== id;
-    if (switching && active()) active().reader = undefined;
+    if (switching) cancelImages(active());
     activeId = id;
     return publish(switching, '', fragment ? { documentId: id, fragment } : null);
   }
@@ -60,8 +64,8 @@ function createSessions({ read = readDocument, watch = watchDocument, canonicali
               publish(false);
               return;
             }
+            cancelImages(entry);
             entry.doc = { ...next, id, revision: entry.doc.revision + 1 };
-            entry.reader = undefined;
             entry.error = '';
             publish(id === activeId);
           }, (error) => {
@@ -86,6 +90,7 @@ function createSessions({ read = readDocument, watch = watchDocument, canonicali
     const ids = [...documents.keys()];
     const index = ids.indexOf(id);
     const wasActive = id === activeId;
+    cancelImages(entry);
     entry.stop();
     documents.delete(id);
     if (wasActive) activeId = ids[index + 1] ?? ids[index - 1] ?? null;
@@ -93,7 +98,7 @@ function createSessions({ read = readDocument, watch = watchDocument, canonicali
   }
   function dispose() {
     generation++;
-    for (const entry of documents.values()) entry.stop();
+    for (const entry of documents.values()) { cancelImages(entry); entry.stop(); }
     documents.clear();
     activeId = null;
     sequence++;

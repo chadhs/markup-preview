@@ -38,7 +38,7 @@ Images fit the reading column and keep their original proportions.
 
 [[file:missing.png]]
 [[file:images café 日本語/invalid.png]]
-[[https://tracker.invalid/remote.png]]
+[[https://tracker.invalid/remote.png][A described remote image link]]
 [[file:images café 日本語/chart.png][A described image link]]
 
 #+begin_export html

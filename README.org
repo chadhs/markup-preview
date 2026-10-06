@@ -150,12 +150,22 @@ Babel headers such as =:file= never write files or run commands. Generate
 Graphviz, PlantUML, or ditaa images in your editor and use local image links
 for those formats.
 
-* Local images
+* Images
 Image links without descriptions display inline, for example
 =[[file:images/chart.png]]= or =[[./photo.jpg]]=.
 PNG, JPEG, GIF, WebP, and SVG files are supported. Relative paths resolve
 from the document's folder; absolute paths and =~/= paths also work.
 Images fit the reading column without being stretched beyond their size.
+
+HTTP and HTTPS images load automatically, including localhost and LAN hosts.
+Opening a document with remote images contacts those image hosts. Documents
+are not uploaded, and image requests send no cookies, authentication, or document referrer.
+Org image links need a supported extension in the URL path, for example
+=[[https://example.com/chart.png]]=. Query strings and fragments also work.
+Org links with descriptions
+remain text, following Org's inline-image convention.
+Markdown supports =![Chart](https://example.com/image)= and reference-style
+images, including URLs without a file extension. Descriptions provide alt text.
 
 Inline local images in Solarized Light.
 
@@ -163,12 +173,15 @@ Inline local images in Solarized Light.
 
 Missing, unreadable, or invalid images show a placeholder while the document
 remains readable. Images reload when you save the document or close and reopen its tab.
-Image-only changes are not watched separately. Web images remain links,
-and Org links with descriptions remain text, following Org's inline-image convention.
-Markdown image descriptions provide alt text.
+Image-only changes are not watched separately. Remote failures show a placeholder
+while local images and text remain available offline. Saving the document retries
+downloads; switching away cancels pending downloads and discards its image cache.
 
 Previews are limited to 100 image links, 8 MiB per image, and 32 MiB of unique
-image data per document. SVGs display in an image context, without executing
+image data per document, shared across local and remote images. Remote downloads
+allow five HTTP/HTTPS redirects and time out after 15 seconds. URLs containing
+credentials are rejected. Image formats are verified from their bytes.
+SVGs display in an image context, without executing
 scripts or loading external resources. Embedded HTML remains inert.
 
 * Org rendering
@@ -184,9 +197,10 @@ Emacs's exporter. Custom TODO workflows, footnotes, inline math, timestamps,
 macros, export options, and complex Org constructs may display literally or
 incompletely. Source view always shows the original file.
 
-Local image links display inline. Links to supported local documents open in tabs.
+Local and remote image links display inline. Links to supported local documents open in tabs.
 Raw export blocks display as text. Babel, includes, embedded HTML, and
-custom URL handlers never execute. Documents cannot fetch network resources.
+custom URL handlers never execute. Only verified image nodes can fetch remote images;
+HTML, CSS, and Mermaid cannot fetch network resources.
 Clicking a web link opens your browser. No telemetry or cloud services.
 
 * Markdown support
@@ -207,8 +221,9 @@ The promoted title remains in the outline and can be linked to.
 
 Fenced code uses the existing offline syntax highlighter. Backtick and tilde
 =mermaid= fences render diagrams, including fences inside lists and quotes.
-Inline and reference-style local images retain their alt text. Remote images
-remain links; embedded HTML displays as escaped text. Math, MDX, and wiki-link syntax are not supported.
+Inline and reference-style local and remote images retain their alt text.
+Images wrapped in links remain clickable. Embedded HTML displays as escaped text.
+Math, MDX, and wiki-link syntax are not supported.
 
 * Local document links
 Links between local Org and Markdown documents open in tabs. Relative paths
@@ -460,7 +475,8 @@ npm run dev
 
 The first launch opens =examples/welcome.org=. Electron downloads its runtime
 on first use, so installation and that first launch need internet access.
-Reading your files after setup works offline.
+Reading your files and local images after setup works offline. Remote images
+need network access and show placeholders when their hosts are unavailable.
 
 To open a particular file, pass its path. Quote paths containing spaces.
 

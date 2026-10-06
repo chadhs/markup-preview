@@ -24,6 +24,12 @@ try {
     for (const [format, source] of [['org', '[[file:chart.png]]'], ['markdown', '![Chart](chart.png)']]) {
       assert.equal(analyzeDocument({ source, format }).images[0].target.replace(/^file:/, ''), 'chart.png');
     }
+    for (const [format, source, target] of [
+      ['org', '[[https://example.invalid/chart.svg?size=2#view]]', 'https://example.invalid/chart.svg?size=2#view'],
+      ['markdown', '![Chart][image]\n\n[image]: http://localhost:8080/image', 'http://localhost:8080/image'],
+    ]) {
+      assert.equal(analyzeDocument({ source, format }).images[0].target, target);
+    }
     for (const [format, source] of [['org', '#+draft: true'], ['markdown', '---\ndraft: true\n---'], ['markdown', '+++\ndraft = true\n+++']]) {
       assert.equal(analyzeDocument({ source, format }).metadata.draft, true);
     }

@@ -24,11 +24,11 @@ test('Markdown renders GFM tables, tasks, references, footnotes, nested lists an
   for (const pattern of [/<strong>bold<\/strong>/, /<em>italic<\/em>/, /<s>gone<\/s>/, /<blockquote>/, /<ol start="3">/, /disabled checked/, /align-right/, /href="https:\/\/example.com"/, /hljs-keyword/, /Footnote text/, /md-footnote-ref-1-2/]) assert.match(html, pattern);
 });
 
-test('Markdown HTML and unsafe protocols stay inert, remote images stay links', () => {
+test('Markdown HTML and unsafe protocols stay inert, remote images use verified placeholders', () => {
   const { html } = renderMarkdown('<script>alert(1)</script>\n\n<img src="https://tracker.invalid/a.png" onerror="bad()">\n\n[bad](javascript:alert%281%29) ![remote](https://tracker.invalid/a.png) [mail](mailto:a@example.com)\n\n```html\n<script>bad()</script>\n```');
   assert.doesNotMatch(html, /<(?:script|img)\b|href="(?:javascript|data|file):/);
   assert.match(html, /&lt;script&gt;/);
-  assert.match(html, /href="https:\/\/tracker.invalid\/a.png"/);
+  assert.match(html, /data-image-id="0"/);
   assert.match(html, /href="mailto:a@example.com"/);
 });
 

@@ -85,7 +85,7 @@ else {
     if (process.platform === 'darwin' && !app.isPackaged) app.dock.setIcon(iconPath);
     session.defaultSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
     session.defaultSession.setPermissionCheckHandler(() => false);
-    // Documents cannot make network requests, even through image or CSS URLs.
+    // Renderer requests stay blocked. Verified remote images are fetched in Node.
     session.defaultSession.webRequest.onBeforeRequest({ urls: ['http://*/*', 'https://*/*', 'ws://*/*', 'wss://*/*'] }, (_details, callback) => callback({ cancel: true }));
     handle('window:theme', (theme) => updateTitlebar(win, theme));
     handle('document:open', picker);

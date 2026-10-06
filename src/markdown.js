@@ -1,5 +1,5 @@
 import GithubSlugger from 'github-slugger';
-import { analyzeDocument, plainText, externalUrl } from './document-analysis.js';
+import { analyzeDocument, plainText, externalUrl, remoteImageUrl } from './document-analysis.js';
 import { escapeHtml as e } from './html.js';
 import { createCodeHighlighter } from './highlight.js';
 
@@ -66,7 +66,7 @@ export function renderMarkdown(source, fallbackTitle = 'Untitled') {
         const image = nodes.get(node).image;
         if (image) return `<span class="image-preview" data-image-id="${image.id}" data-image-start="${image.start}"><span class="image-placeholder">Loading image: ${e(image.label)}</span></span>`;
         const target = node.url ?? definitions.get(node.identifier)?.url;
-        if (externalUrl(target || '')) return `<a href="${e(target)}" rel="noreferrer">${e(node.alt || target)}</a>`;
+        if (externalUrl(target || '') && !remoteImageUrl(target)) return `<a href="${e(target)}" rel="noreferrer">${e(node.alt || target)}</a>`;
         return `<span class="image-placeholder">Image unavailable or limit reached: ${e(node.alt || target || '')}</span>`;
       }
       case 'code': {

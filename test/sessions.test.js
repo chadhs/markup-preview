@@ -115,3 +115,20 @@ test('image completions are rejected after switching, closing or saving a docume
     assert.match((await reading).error, /changed/);
   }
 });
+
+test('image readers are cancelled on tab switches, saves, closes and session disposal', async () => {
+  for (const action of ['switch', 'save', 'close', 'dispose']) {
+    let cancellations = 0;
+    const { sessions, watchers } = setup({ imageReader: () => Object.assign(async () => ({ dataUrl: 'data:image/png;base64,abc' }), { cancel: () => cancellations++ }) });
+    await sessions.openMany(['a', 'b']);
+    const [a, b] = sessions.snapshot().tabs;
+    await sessions.image('b', {}, sessions.active().revision);
+    if (action === 'switch') sessions.activate(a.id);
+    if (action === 'save') watchers.get('b').change(document('b', 'save'));
+    if (action === 'close') sessions.close(b.id);
+    if (action === 'dispose') sessions.dispose();
+    assert.equal(cancellations, 1, action);
+    sessions.dispose();
+    assert.equal(cancellations, 1, 'discarded readers are not retained');
+  }
+});

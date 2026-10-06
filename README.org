@@ -718,9 +718,9 @@ select =main=. This uses the same checks, checksum verification, and retry
 rules. A manual run for an already-published main commit does nothing. Direct
 pushes containing skip markers can be recovered this way too.
 
-Only the publisher job has repository write permission. It checks all four
+Only the publisher job has repository write permission. It checks all five
 packages against their checksums, creates a versioned source commit and tag,
-uploads six assets to a draft, then publishes after every upload succeeds.
+uploads eight assets to a draft, then publishes after every upload succeeds.
 The tagged commit has the merged main commit as its parent. It updates only
 the package versions, so checking out a tag reproduces the released version.
 The workflow never pushes a version-bump commit back to =main= or triggers

@@ -9,6 +9,7 @@ read your notes here, follow their outline, and see the preview update when you 
 No Emacs installation, account, or cloud service is needed. Your files stay local.
 
 [[#install][Install on macOS or Omarchy]]
+[[#macos-build-and-install-locally][Build and install locally on macOS]]
 
 * Screenshots
 An Org notebook in Default Light, with outline navigation and document search.
@@ -327,6 +328,57 @@ open -a 'Markup Preview' "$HOME/notes/today.org"
 The ZIP is an alternative to the DMG: unzip it and move its app to
 Applications, then follow the same first-launch steps.
 
+** macOS: build and install locally
+With [[https://brew.sh/][Homebrew]] installed, build your own =Markup Preview.app= and install it in
+Applications. Allow about 5–10 minutes for the first setup and build, depending
+on download speed. Setup needs internet access; the installed app runs on its own.
+
+1. Install Git and [[https://formulae.brew.sh/formula/node@24][Node.js 24]] with Homebrew. Node includes npm; the PATH line
+   selects Node 24 for this Terminal session.
+
+   #+begin_src sh
+   brew install git node@24
+   export PATH="$(brew --prefix node@24)/bin:$PATH"
+   #+end_src
+
+2. Clone the repository, select the newest stable release, and build the app.
+
+   #+begin_src sh
+   git clone https://github.com/chadhs/markup-preview.git
+   cd markup-preview
+   MARKUP_PREVIEW_TAG="$(git tag --sort=-version:refname | awk '/^v[0-9]+\.[0-9]+\.[0-9]+$/ {print; exit}')"
+   git switch --detach "$MARKUP_PREVIEW_TAG"
+   npm ci
+   npm run pack
+   open release
+   #+end_src
+
+3. Finder opens =release/=. Open its =mac-arm64= or =mac= folder to find
+   *Markup Preview.app*. Quit any running copies and drag the app into
+   *Applications*, replacing an older installed copy if needed. If you cannot
+   write to =/Applications=, use =Applications= inside your home folder instead.
+   Launch the installed copy from Finder or Spotlight; you can also add it to
+   the Dock or use *Open With* for Org and Markdown files. Keep one installed copy.
+
+4. To update, return to the checkout, fetch the release tags, and rebuild.
+   Quit the installed app and replace it with the new build using step 3.
+
+   #+begin_src sh
+   export PATH="$(brew --prefix node@24)/bin:$PATH"
+   cd /path/to/markup-preview
+   git fetch --tags origin
+   MARKUP_PREVIEW_TAG="$(git tag --sort=-version:refname | awk '/^v[0-9]+\.[0-9]+\.[0-9]+$/ {print; exit}')"
+   git switch --detach "$MARKUP_PREVIEW_TAG"
+   npm ci
+   npm run pack
+   open release
+   #+end_src
+
+The build signs the app ad-hoc automatically. No Apple Developer Program
+membership or signing credentials are needed. This route was verified on
+Apple Silicon without a downloaded-app approval alert. [[https://support.apple.com/guide/security/gatekeeper-and-runtime-protection-sec5599b66df/web][Mac security policies]]
+still apply; if macOS asks for approval, follow the app-specific steps above.
+
 ** Omarchy / Arch: install the tar package
 The application was tested on Omarchy 4.0.2 with Hyprland 0.56.2, using
 native Wayland and XWayland. This installation needs no FUSE and no =sudo=.
@@ -489,6 +541,7 @@ npm start -- ~/notes/today.org
 * Build a desktop app
 Run these commands on the target operating system. Build output goes in
 =release/=. These commands create local artifacts and do not publish releases.
+For a personal Mac installation, follow [[#macos-build-and-install-locally][the build-and-install guide]] above.
 
 #+begin_src sh
 npm run dist:mac    # .dmg and .zip for the Mac's architecture

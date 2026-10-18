@@ -90,6 +90,9 @@ Up to 20 documents can be open, with a 16 MiB limit per file and 64 MiB of
 source files in total. Close a tab to free its watcher and retained content.
 Only the active document retains an image cache and mounted preview.
 
+If a document cannot be rendered, its tab still shows that file's original
+source and a persistent error. Saving a corrected file retries the preview.
+
 * Syntax highlighting
 Preview source blocks use their declared language, such as =#+begin_src python=.
 Highlighting works offline and follows the selected color theme.
@@ -665,6 +668,13 @@ the pull request. Merging to =main= automatically publishes a release.
    handlers and shortcuts are removed on uninstall, and documents remain intact.
 
 ** Test maintenance
+Dependabot opens weekly npm and GitHub Actions update PRs for review. Electron
+updates remain separate because its runtime ships with the application.
+Orga and text-kit are pinned with local patches; update those packages and
+their patches together. Action versions are pinned to immutable commits.
+Dependency updates still require the desktop and packaged-application checks;
+they are not merged automatically.
+
 Keep the automated tests in =test/= and =scripts/smoke.mjs=: they protect
 rendering, file watching, sandboxing, and release publication. Test fixtures
 are temporary, and logs/screenshots belong in ignored =test-results/= or

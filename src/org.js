@@ -16,6 +16,7 @@ export function renderOrg(source, fallbackTitle = 'Untitled') {
   const diagramNodes = new WeakMap();
   let diagramCharacters = 0;
   const used = new Set();
+  const nextSuffix = new Map();
   const raw = (node) => source.slice(node.position?.start.offset, node.position?.end.offset);
   const text = (node) => node.type === 'text' ? node.value : (node.children || []).map(text).join('');
   const anchor = (value) => `org-${String(value).trim().toLowerCase().replace(/[^\p{L}\p{N}_-]+/gu, '-').replace(/^-|-$/g, '') || 'section'}`;
@@ -27,7 +28,9 @@ export function renderOrg(source, fallbackTitle = 'Untitled') {
         const label = text(heading).trim();
         const base = anchor(node.properties?.custom_id || label);
         let id = base;
-        for (let n = 2; used.has(id); n++) id = `${base}-${n}`;
+        let suffix = nextSuffix.get(base) ?? 2;
+        while (used.has(id)) id = `${base}-${suffix++}`;
+        nextSuffix.set(base, suffix);
         used.add(id);
         ids.set(heading, id);
         anchors[id] = id;

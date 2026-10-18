@@ -1,6 +1,34 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSessions, MAX_TABS, MAX_SESSION_BYTES } from '../electron/sessions.cjs';
+import { readDocument, watchDocument } from '../electron/documents.cjs';
+import { mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+
+test('a save between the first read and watch subscription is recovered', async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'markup-preview-subscribe-'));
+  const file = path.join(directory, 'race.md');
+  await writeFile(file, '# Before subscribing');
+  let changed;
+  const update = new Promise((resolve) => { changed = resolve; });
+  const sessions = createSessions({
+    read: async (file) => {
+      const original = await readDocument(file);
+      await writeFile(file, '# Saved before subscribing');
+      return original;
+    },
+    watch: (file, change, error) => watchDocument(file, change, error, 30),
+    changed: (state) => { if (state.document?.source === '# Saved before subscribing') changed(); },
+  });
+  let timer;
+  try {
+    await sessions.openMany([file]);
+    await Promise.race([update, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Missed save during open')), 3000); })]);
+    assert.equal(sessions.active().source, '# Saved before subscribing');
+    assert.equal(sessions.active().revision, 2);
+  } finally { clearTimeout(timer); sessions.dispose(); await rm(directory, { recursive: true, force: true }); }
+});
 
 const document = (path, source = path, size = source.length) => ({ path, source, size, name: path.split('/').at(-1), modified: 1 });
 function setup(options = {}) {

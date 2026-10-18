@@ -1,0 +1,25 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    # These exact versions have local patches. Upgrade them with the patches.
+    ignore:
+      - dependency-name: orga
+      - dependency-name: text-kit
+    groups:
+      compatible-updates:
+        patterns: ['*']
+        exclude-patterns: [electron]
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ['*']

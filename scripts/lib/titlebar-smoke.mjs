@@ -11,7 +11,8 @@ export async function checkTitlebar(app, window, prefix) {
     expect(native.content.height).toBe(native.bounds.height);
     expect(native.trafficLights).toEqual({ x: 14, y: 15 });
   }
-  await expect(window.locator('.toolbar')).toHaveCSS('height', '44px');
+  // Fractional desktop scaling can round CSS geometry by a subpixel.
+  await expect.poll(async () => Math.abs(parseFloat(await window.locator('.toolbar').evaluate((element) => getComputedStyle(element).height)) - 44)).toBeLessThan(0.1);
   await expect(window.locator('.toolbar')).toHaveCSS('app-region', 'drag');
   await expect(window.locator('#open')).toHaveCSS('app-region', 'no-drag');
   await expect(window.locator('.version')).toBeVisible();

@@ -17,6 +17,7 @@ const api = window.markupPreview;
 $('.version').textContent = appVersion;
 let current;
 let currentParsed;
+let renderError = '';
 let pendingNavigation;
 let sourceMode = false;
 const finder = createSearch(() => $(sourceMode ? '#source' : '#document'), $('#reader'), (text) => { $('#search-count').textContent = text; });
@@ -106,7 +107,7 @@ async function acceptSession(state) {
   if (Object.hasOwn(state, 'document')) {
     if (state.document) navigationError = await acceptDocument(state.document);
     else {
-      saveView(); current = undefined; renderRevision++; observer?.disconnect(); finder.clear();
+      saveView(); current = undefined; currentParsed = undefined; renderError = ''; renderRevision++; observer?.disconnect(); finder.clear();
       activeDiagrams = [];
       $('#content').replaceChildren(); $('#source').textContent = '';
       $('#empty-state').hidden = false; $('#document').hidden = true; $('#source').hidden = true;
@@ -125,12 +126,13 @@ async function acceptSession(state) {
   for (const id of views.keys()) if (!tabs.some((tab) => tab.id === id)) views.delete(id);
   for (const selector of ['#preview-tab', '#source-tab', '#find-button', '#toggle-outline', '#file-info']) $(selector).disabled = !activeTabId;
   $('#toggle-content-width').disabled = !activeTabId || sourceMode;
-  $('#error').hidden = !(activeError || sessionOpenError || navigationError);
-  if (activeError || sessionOpenError || navigationError) error(sessionOpenError || activeError || navigationError);
+  $('#preview-tab').disabled = !currentParsed;
+  $('#error').hidden = !(activeError || sessionOpenError || navigationError || renderError);
+  if (activeError || sessionOpenError || navigationError || renderError) error(sessionOpenError || activeError || navigationError || renderError);
 }
 
 function applyNavigation() {
-  if (!pendingNavigation || current?.id !== pendingNavigation.documentId) return '';
+  if (!currentParsed || !pendingNavigation || current?.id !== pendingNavigation.documentId) return '';
   const { fragment } = pendingNavigation;
   pendingNavigation = null;
   const id = fragment.value ? resolveAnchor(currentParsed, fragment) : 'document-title';
@@ -145,6 +147,7 @@ function applyNavigation() {
 function setView(source) {
   if (!current) return;
   scrollPositions[sourceMode ? 'source' : 'preview'] = $('#reader').scrollTop;
+  source = source || !currentParsed;
   sourceMode = source;
   $('#document').hidden = source;
   $('#source').hidden = !source;
@@ -167,6 +170,35 @@ async function acceptDocument(doc) {
   const revision = ++renderRevision;
   const top = view.scroll[view.sourceMode ? 'source' : 'preview'];
   const interaction = interactionRevision;
+  // Source and identity must survive even when preview generation fails.
+  currentParsed = undefined; renderError = ''; activeDiagrams = [];
+  observer?.disconnect(); finder.clear();
+  $('#content').replaceChildren(); $('#outline').replaceChildren();
+  $('#metadata').replaceChildren(); $('#subtitle').textContent = '';
+  $('#subtitle').hidden = true; $('#heading-count').textContent = '0';
+  $('#stats').textContent = '';
+  current = doc;
+  sourceMode = view.sourceMode;
+  scrollPositions = { ...view.scroll };
+  $('#empty-state').hidden = true; $('.page-top').hidden = false;
+  if (changedFile) $('#sidebar').hidden = false;
+  $('#reader').setAttribute('aria-labelledby', `tab-${doc.id}`);
+  $('#document').hidden = sourceMode; $('#source').hidden = !sourceMode;
+  $('#preview-tab').setAttribute('aria-pressed', String(!sourceMode));
+  $('#source-tab').setAttribute('aria-pressed', String(sourceMode));
+  $('#toggle-content-width').disabled = sourceMode;
+  $('#mode-label').textContent = `${doc.format === 'markdown' ? 'MARKDOWN' : 'ORG'} ${sourceMode ? 'SOURCE · READ ONLY' : 'DOCUMENT'}`;
+  $('#search-bar').hidden = !view.searchOpen;
+  $('#search').value = view.search.query;
+  $('#error').hidden = true;
+  $('#filename').textContent = doc.name;
+  $('.file-icon').textContent = doc.format === 'markdown' ? 'md' : 'org';
+  $('#format-label').textContent = doc.format === 'markdown' ? 'Markdown' : 'Org mode';
+  $('#breadcrumb').textContent = doc.path;
+  $('#file-info').title = `Reveal ${doc.path}`;
+  $('#document-title').textContent = doc.name;
+  $('#source').textContent = doc.source;
+  $('#preview-tab').disabled = true;
   $('#status').textContent = 'Rendering…';
   // Let the status paint before parsing a larger document.
   await new Promise(requestAnimationFrame);
@@ -174,31 +206,12 @@ async function acceptDocument(doc) {
   try {
     const parsed = renderDocument(doc);
     currentParsed = parsed;
-    current = doc;
-    sourceMode = view.sourceMode;
-    scrollPositions = { ...view.scroll };
-    $('#empty-state').hidden = true; $('.page-top').hidden = false;
-    if (changedFile) $('#sidebar').hidden = false;
-    $('#reader').setAttribute('aria-labelledby', `tab-${doc.id}`);
-    $('#document').hidden = sourceMode; $('#source').hidden = !sourceMode;
-    $('#preview-tab').setAttribute('aria-pressed', String(!sourceMode));
-    $('#source-tab').setAttribute('aria-pressed', String(sourceMode));
-    $('#toggle-content-width').disabled = sourceMode;
-    $('#mode-label').textContent = `${doc.format === 'markdown' ? 'MARKDOWN' : 'ORG'} ${sourceMode ? 'SOURCE · READ ONLY' : 'DOCUMENT'}`;
-    $('#search-bar').hidden = !view.searchOpen;
-    $('#search').value = view.search.query;
-    $('#error').hidden = true;
-    $('#filename').textContent = doc.name;
-    $('.file-icon').textContent = doc.format === 'markdown' ? 'md' : 'org';
-    $('#format-label').textContent = doc.format === 'markdown' ? 'Markdown' : 'Org mode';
-    $('#breadcrumb').textContent = doc.path;
-    $('#file-info').title = `Reveal ${doc.path}`;
+    $('#preview-tab').disabled = false;
     $('#document-title').textContent = parsed.title;
     $('#subtitle').textContent = parsed.subtitle;
     $('#subtitle').hidden = !parsed.subtitle;
     showMetadata($('#metadata'), parsed);
     $('#content').innerHTML = DOMPurify.sanitize(parsed.html, { USE_PROFILES: { html: true }, FORBID_TAGS: ['style', 'img', 'video', 'audio', 'iframe', 'form'], FORBID_ATTR: ['style'] });
-    $('#source').textContent = doc.source;
     activeDiagrams = parsed.diagrams;
     $('#heading-count').textContent = parsed.outline.length;
     const outline = document.createDocumentFragment();
@@ -243,7 +256,14 @@ async function acceptDocument(doc) {
     refreshDiagrams(layoutChanged);
     void loadImages($('#content'), parsed.images, doc.path, (file, reference) => api.image(file, reference, doc.revision), () => revision === renderRevision, layoutChanged);
     return applyNavigation();
-  } catch (reason) { error(`Could not render this file: ${reason.message}`); }
+  } catch (reason) {
+    currentParsed = undefined; activeDiagrams = [];
+    $('#content').replaceChildren(); $('#outline').replaceChildren();
+    $('#preview-tab').disabled = true;
+    renderError = `Could not render this file: ${reason.message}. Showing the original source.`;
+    setView(true);
+    error(renderError);
+  }
 }
 function refreshDiagrams(onChange) {
   const top = $('#reader').scrollTop;

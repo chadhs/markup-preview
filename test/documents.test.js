@@ -3,9 +3,34 @@ import assert from 'node:assert/strict';
 import { mkdtemp, writeFile, rename, rm, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { readDocument, watchDocument, MAX_BYTES } from '../electron/documents.cjs';
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function until(predicate) { for (let i = 0; i < 100; i++) { if (predicate()) return; await delay(30); } throw new Error('Timed out waiting for file watch'); }
+
+test('a FIFO is rejected without blocking the next document open', { skip: process.platform === 'win32' }, async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'markup-preview-fifo-'));
+  try {
+    const fifo = path.join(dir, 'blocked.md'), file = path.join(dir, 'ordinary.md');
+    execFileSync('mkfifo', [fifo]);
+    await writeFile(file, '# Ordinary');
+    // A regression must time out a disposable process, not strand the test runner.
+    execFileSync(process.execPath, ['-e', `
+      const assert = require('node:assert/strict');
+      const { createSessions } = require('./electron/sessions.cjs');
+      const sessions = createSessions();
+      (async () => {
+        try {
+          const blocked = sessions.openMany([process.argv[1]]);
+          const ordinary = sessions.openMany([process.argv[2]]);
+          assert.match((await blocked).openError, /file/);
+          await ordinary;
+          assert.equal(sessions.active().source, '# Ordinary');
+        } finally { sessions.dispose(); }
+      })().catch((error) => { console.error(error); process.exitCode = 1; });
+    `, fifo, file], { timeout: 5000, killSignal: 'SIGKILL' });
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
 
 test('reads Org and Markdown files and rejects invalid types, directories and oversized input', async () => {
   const dir = await mkdtemp(path.join(tmpdir(), 'markup-preview-'));

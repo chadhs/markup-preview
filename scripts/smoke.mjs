@@ -14,6 +14,7 @@ import { checkContentWidth } from './lib/content-width-smoke.mjs';
 import { checkOrgImages } from './lib/org-images-smoke.mjs';
 import { checkRemoteImages } from './lib/remote-images-smoke.mjs';
 import { checkLocalPaths } from './lib/local-paths-smoke.mjs';
+import { checkRenderRecovery } from './lib/render-recovery-smoke.mjs';
 
 const directory = await mkdtemp(path.join(tmpdir(), 'markup-preview-smoke-'));
 const file = path.join(directory, 'smoke café 日本語.org');
@@ -45,6 +46,7 @@ try {
   await expect(window.locator('#source')).toBeVisible();
   await expect(window.locator('#source')).toContainText('#+title: Desktop smoke test');
   await window.locator('#preview-tab').click();
+  await checkRenderRecovery(window, directory, file);
   await checkAppearance(window);
   await checkTitlebar(app, window, executablePath ? 'packaged' : 'desktop');
   await window.locator('#find-button').click();

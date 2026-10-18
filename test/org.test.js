@@ -1,6 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { renderOrg } from '../src/org.js';
+import { execFileSync } from 'node:child_process';
+
+test('duplicate headings keep stable IDs around existing suffixed headings', () => {
+  const result = renderOrg('* Same\n* Same-2\n* Same\n* Same\n* Same-3\n* Same');
+  assert.deepEqual(result.outline.map((heading) => heading.id), ['org-same', 'org-same-2', 'org-same-3', 'org-same-4', 'org-same-3-2', 'org-same-5']);
+});
+
+test('many duplicate headings render within a bounded subprocess deadline', () => {
+  execFileSync(process.execPath, ['--input-type=module', '-e', `
+    import assert from 'node:assert/strict';
+    import { renderOrg } from './src/org.js';
+    const { outline } = renderOrg('* same\\n'.repeat(30000));
+    assert.equal(outline.length, 30000);
+    assert.equal(new Set(outline.map((heading) => heading.id)).size, 30000);
+    assert.equal(outline.at(-1).id, 'org-same-30000');
+  `], { timeout: 10000, killSignal: 'SIGKILL' });
+});
 
 test('metadata, task states, tags, stable duplicate headings, and custom anchors', () => {
   const result = renderOrg('#+title: A notebook\n#+author: Chad\n* TODO First :work:\n:PROPERTIES:\n:CUSTOM_ID: custom\n:END:\n* DONE First\n* First\n[[#custom][Go back]]');

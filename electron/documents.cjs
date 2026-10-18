@@ -10,7 +10,8 @@ async function readDocument(filePath) {
   assertLocalPath(filePath);
   if (!documentFormat(filePath)) throw new Error('Choose an .org, .md, or .markdown file.');
   const absolute = assertLocalPath(path.resolve(filePath));
-  const handle = await fsp.open(absolute, 'r');
+  // A FIFO must not block before we can inspect its file descriptor.
+  const handle = await fsp.open(absolute, fs.constants.O_RDONLY | fs.constants.O_NONBLOCK);
   try {
     const stat = await handle.stat();
     if (!stat.isFile()) throw new Error('Choose a file, not a directory.');
@@ -43,6 +44,8 @@ function watchDocument(filePath, onChange, onError, interval = 300) {
   };
   // Poll the pathname so atomic editor saves and delete/recreate keep working.
   fs.watchFile(filePath, { interval }, listener);
+  // Recheck after subscribing: a save may have landed since the initial open.
+  void listener();
   return () => { stopped = true; revision++; fs.unwatchFile(filePath, listener); };
 }
 module.exports = { readDocument, watchDocument, MAX_BYTES };

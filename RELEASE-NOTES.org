@@ -6,6 +6,17 @@ pass. The first version is =0.1.0=, followed by =0.2.0=, =0.3.0=, and so on.
 The GitHub release page contains the exact version, changes, downloads,
 and checksums. Pull requests do not publish releases.
 
+* Reliability and dependency hardening
+- Keep the selected document's original source available when preview rendering
+  fails, retain the error, and recover after a corrected save.
+- Allocate duplicate Org heading IDs without repeatedly scanning earlier IDs.
+- Reject named pipes without blocking later document opens and recheck files
+  after subscribing to changes so saves during opening are not missed.
+- Update Electron, TOML parsing, and HTML sanitization dependencies. Pin workflow
+  actions to commits and request reviewed weekly dependency updates.
+- Exercise rendering recovery and special-file rejection in regression checks;
+  allow subpixel rounding in the desktop title-bar height assertion.
+
 * Windows 11 support
 - Add an unsigned per-user NSIS installer for Intel/AMD x64 Windows 11 PCs,
   a native icon, Start menu shortcut, and Org/Markdown file-handler registrations.

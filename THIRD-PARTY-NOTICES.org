@@ -6,7 +6,7 @@ includes LICENSE and LICENSES.chromium.html for its bundled components.
 
 Regenerate this file with =npm run notices= after dependency updates.
 
-* dompurify 3.4.15
+* dompurify 3.4.17
 License: (MPL-2.0 OR Apache-2.0)
 
 #+begin_example
@@ -5364,7 +5364,7 @@ SOFTWARE.
 
 #+end_example
 
-* smol-toml 1.8.0
+* smol-toml 1.9.1
 License: BSD-3-Clause
 
 #+begin_example

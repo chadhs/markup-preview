@@ -1,16 +1,13 @@
-const { existsSync } = require('node:fs');
-const path = require('node:path');
+const { createAnalyzer } = require('./analysis.cjs');
 const { documentFormat } = require('./formats.cjs');
 const indexes = new WeakMap();
-let analyzer;
+const analyzer = createAnalyzer();
 async function documentIndex(doc) {
   if (!indexes.has(doc)) {
-    analyzer ??= existsSync(path.join(__dirname, '../src/document-analysis.js'))
-      ? import('../src/document-analysis.js') : Promise.resolve(require('../dist/document-analysis.cjs'));
-    indexes.set(doc, analyzer.then(({ analyzeDocument }) => {
-      const { images, diagrams, links } = analyzeDocument({ source: doc.source, format: doc.format ?? documentFormat(doc.path) });
-      return { images, diagrams, links };
-    }));
+    const indexing = analyzer.analyze({ source: doc.source, format: doc.format ?? documentFormat(doc.path) });
+    indexes.set(doc, indexing);
+    // Cancellation must not poison this revision if the user returns to its tab.
+    void indexing.catch(() => { if (indexes.get(doc) === indexing) indexes.delete(doc); });
   }
   return indexes.get(doc);
 }
@@ -22,4 +19,4 @@ async function documentResource(doc, kind, request) {
   if (!resource || (request.reference !== undefined && resource.reference !== request.reference)) throw new Error('Invalid document reference.');
   return resource;
 }
-module.exports = { documentIndex, documentResource };
+module.exports = { documentIndex, documentResource, cancelAnalysis: analyzer.cancel };

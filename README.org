@@ -92,6 +92,12 @@ Only the active document retains an image cache and mounted preview.
 
 If a document cannot be rendered, its tab still shows that file's original
 source and a persistent error. Saving a corrected file retries the preview.
+Parsing and HTML generation run in a cancellable browser worker with a
+15-second deadline. Previews allow 250,000 syntax-tree nodes, 128 levels
+of nesting, and 32 Mi UTF-16 characters of generated HTML. YAML and TOML front
+matter over 128 Ki characters stays visible as source with a warning.
+These limits bound processing separately from the source-file byte limits.
+Mounting the resulting HTML and document search still run in the reader.
 
 * Syntax highlighting
 Preview source blocks use their declared language, such as =#+begin_src python=.
@@ -180,6 +186,9 @@ remains readable. Images reload when you save the document or close and reopen i
 Image-only changes are not watched separately. Remote failures show a placeholder
 while local images and text remain available offline. Saving the document retries
 downloads; switching away cancels pending downloads and discards its image cache.
+Local and remote images use separate queues, with at most one load of each
+kind at a time, so a stalled remote host does not delay local images.
+Both queues share the image-byte budget, including data currently being read.
 
 Previews are limited to 100 image links, 8 MiB per image, and 32 MiB of unique
 image data per document, shared across local and remote images. Remote downloads
@@ -569,8 +578,14 @@ renderers share the reading interface, syntax highlighting, and resource
 presentation. DOMPurify sanitizes the output in a sandboxed renderer.
 
 Electron verifies images, Mermaid blocks, and local links against parsed
-nodes in the active source revision. The parsing module is bundled separately
-for Node so packaged apps require no external =node_modules= tree.
+nodes in the active source revision. This independent analysis runs in a Node
+worker thread with a 15-second deadline and a 256 MiB old-generation heap
+limit. Tab switches, saves, and closes cancel pending analysis. The worker
+keeps synchronous parsing off the main event loop; it is not an OS sandbox
+and its heap limit is not a total application-memory limit.
+The parsing module is bundled separately for Node so packaged apps require
+no external =node_modules= tree. Preview workers return HTML that the reader
+still sanitizes before inserting it into the document.
 Dependencies retain their licenses in =THIRD-PARTY-NOTICES.org=.
 
 * Run from source

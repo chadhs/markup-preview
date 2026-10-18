@@ -184,3 +184,47 @@ test('failed downloads are cached for a revision and retried by a new reader', a
   assert.equal(calls, 1);
   assert.deepEqual(await createImageReader(doc, options)(images[0]), pngResult);
 });
+
+test('a stalled remote image does not delay local reads and cancellation frees in-flight bytes', async (t) => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'markup-preview-image-queues-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const file = path.join(directory, 'local.png');
+  await writeFile(file, fixturePng);
+  let started;
+  const downloading = new Promise((resolve) => { started = resolve; });
+  const { read, images } = setup(['https://example.invalid/slow', file], { fetch: async (_url, { signal }) => new Response(new ReadableStream({
+    start(controller) {
+      controller.enqueue(fixturePng);
+      signal.addEventListener('abort', () => controller.error(signal.reason), { once: true });
+      started();
+    },
+  })) });
+  t.after(() => read.cancel());
+  const remote = read(images[0]);
+  await downloading;
+  let timer;
+  try {
+    const local = await Promise.race([read(images[1]), new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Local image blocked by remote')), 1000); })]);
+    assert.deepEqual(local, pngResult);
+  } finally { clearTimeout(timer); read.cancel(); }
+  assert.match((await remote).error, /document changed/);
+});
+
+test('concurrent local and remote reads cannot exceed their shared byte budget', async (t) => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'markup-preview-concurrent-budget-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const bytes = Buffer.alloc(MAX_IMAGE_BYTES); fixturePng.copy(bytes);
+  const local = path.join(directory, 'large.png'); await writeFile(local, bytes);
+  const { read, images } = setup([local, ...Array.from({ length: 5 }, (_, index) => `https://example.invalid/${index}`)], { fetch: async () => new Response(bytes) });
+  const results = await Promise.all(images.map(read));
+  assert.equal(results.filter((result) => result.dataUrl).length, 4);
+  assert.equal(results.filter((result) => /Image limit reached/.test(result.error)).length, 2);
+});
+
+test('invalid downloaded bytes release budget for later valid images', async () => {
+  const bytes = Buffer.alloc(MAX_IMAGE_BYTES); fixturePng.copy(bytes);
+  const targets = Array.from({ length: 8 }, (_, index) => `https://example.invalid/${index}`);
+  const { read, images } = setup(targets, { fetch: async (url) => new Response(Number(new URL(url).pathname.slice(1)) < 4 ? Buffer.alloc(MAX_IMAGE_BYTES) : bytes) });
+  for (const reference of images.slice(0, 4)) assert.match((await read(reference)).error, /invalid image/);
+  for (const reference of images.slice(4)) assert.ok((await read(reference)).dataUrl);
+});

@@ -15,6 +15,7 @@ import { checkOrgImages } from './lib/org-images-smoke.mjs';
 import { checkRemoteImages } from './lib/remote-images-smoke.mjs';
 import { checkLocalPaths } from './lib/local-paths-smoke.mjs';
 import { checkRenderRecovery } from './lib/render-recovery-smoke.mjs';
+import { checkProcessing } from './lib/processing-smoke.mjs';
 
 const directory = await mkdtemp(path.join(tmpdir(), 'markup-preview-smoke-'));
 const file = path.join(directory, 'smoke café 日本語.org');
@@ -47,6 +48,7 @@ try {
   await expect(window.locator('#source')).toContainText('#+title: Desktop smoke test');
   await window.locator('#preview-tab').click();
   await checkRenderRecovery(window, directory, file);
+  await checkProcessing(window, directory, file);
   await checkAppearance(window);
   await checkTitlebar(app, window, executablePath ? 'packaged' : 'desktop');
   await window.locator('#find-button').click();
@@ -79,6 +81,8 @@ try {
   await window.locator('#preview-tab').click();
   await writeFile(file, longSource + 'External save with search open.\n');
   await expect(window.locator('#source')).toContainText('External save with search open.');
+  // Raw source is available before the asynchronous preview has completed.
+  await expect(window.locator('#content')).toContainText('External save with search open.');
   expect(await window.locator('#reader').evaluate((reader) => reader.scrollTop)).toBe(1000);
   await expect(window.locator('#search-count')).toHaveText('2 / 2');
   await window.locator('#search').press('Shift+Enter');
@@ -145,6 +149,7 @@ try {
   await window.locator('#close-search').click();
   await writeFile(large, largeSource.replace('Last sentence.', 'Saved large document.'));
   await expect(window.locator('#source')).toContainText('Saved large document.', { timeout: 30000 });
+  await expect(window.locator('#content')).toContainText('Saved large document.', { timeout: 30000 });
   await expect(window.locator('#error')).toBeHidden();
   // A second CLI invocation must report bad input instead of ignoring it.
   await app.evaluate(({ app }) => {

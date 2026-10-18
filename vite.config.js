@@ -1,2 +1,9 @@
 import { defineConfig } from 'vite';
-export default defineConfig({ base: './', build: { rolldownOptions: { input: ['index.html', 'diagram.html'] } } });
+import { fileURLToPath } from 'node:url';
+export default defineConfig({
+  base: './',
+  // The browser entry uses document.createElement; workers need the package's
+  // DOM-free character table, also used by our Node analysis bundle.
+  resolve: { alias: { 'decode-named-character-reference': fileURLToPath(import.meta.resolve('decode-named-character-reference')) } },
+  build: { rolldownOptions: { input: ['index.html', 'diagram.html'] } },
+});

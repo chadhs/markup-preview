@@ -6,6 +6,16 @@ pass. The first version is =0.1.0=, followed by =0.2.0=, =0.3.0=, and so on.
 The GitHub release page contains the exact version, changes, downloads,
 and checksums. Pull requests do not publish releases.
 
+* Bounded processing and independent image loading
+- Generate previews in cancellable browser workers and validate source resources
+  in separate Node worker threads, with 15-second processing deadlines.
+- Bound syntax-tree depth and node counts, generated HTML, and front-matter
+  parsing. Keep original source available when a document exceeds a limit.
+- Preserve source/search interactions during processing and discard completions
+  from replaced document revisions.
+- Load local images independently of slow remote hosts while sharing the same
+  byte budget, including in-flight data. Keep the existing remote-image policy.
+
 * Reliability and dependency hardening
 - Keep the selected document's original source available when preview rendering
   fails, retain the error, and recover after a corrected save.

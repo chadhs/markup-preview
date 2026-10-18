@@ -93,7 +93,7 @@ Only the active document retains an image cache and mounted preview.
 If a document cannot be rendered, its tab still shows that file's original
 source and a persistent error. Saving a corrected file retries the preview.
 Parsing and HTML generation run in a cancellable browser worker with a
-five-second deadline. Previews allow 250,000 syntax-tree nodes, 128 levels
+15-second deadline. Previews allow 250,000 syntax-tree nodes, 128 levels
 of nesting, and 32 Mi UTF-16 characters of generated HTML. YAML and TOML front
 matter over 128 Ki characters stays visible as source with a warning.
 These limits bound processing separately from the source-file byte limits.
@@ -579,7 +579,7 @@ presentation. DOMPurify sanitizes the output in a sandboxed renderer.
 
 Electron verifies images, Mermaid blocks, and local links against parsed
 nodes in the active source revision. This independent analysis runs in a Node
-worker thread with a five-second deadline and a 256 MiB old-generation heap
+worker thread with a 15-second deadline and a 256 MiB old-generation heap
 limit. Tab switches, saves, and closes cancel pending analysis. The worker
 keeps synchronous parsing off the main event loop; it is not an OS sandbox
 and its heap limit is not a total application-memory limit.

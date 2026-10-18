@@ -178,11 +178,18 @@ async function acceptDocument(doc) {
   const interaction = interactionRevision;
   // Source and identity must survive even when preview generation fails.
   currentParsed = undefined; renderError = ''; activeDiagrams = [];
-  observer?.disconnect(); finder.clear();
-  $('#content').replaceChildren(); $('#outline').replaceChildren();
-  $('#metadata').replaceChildren(); $('#subtitle').textContent = '';
-  $('#subtitle').hidden = true; $('#heading-count').textContent = '0';
-  $('#stats').textContent = '';
+  observer?.disconnect();
+  // Keep this file's preview and geometry while a save is processing. A tab
+  // switch must clear it immediately so another file's content is never shown.
+  if (changedFile) {
+    finder.clear();
+    $('#content').replaceChildren(); $('#outline').replaceChildren();
+    $('#metadata').replaceChildren(); $('#subtitle').textContent = '';
+    $('#subtitle').hidden = true; $('#heading-count').textContent = '0';
+    $('#stats').textContent = '';
+    $('#document-title').textContent = doc.name;
+  }
+  for (const button of $$('#outline button')) button.disabled = true;
   current = doc;
   sourceMode = view.sourceMode;
   scrollPositions = { ...view.scroll };
@@ -202,7 +209,6 @@ async function acceptDocument(doc) {
   $('#format-label').textContent = doc.format === 'markdown' ? 'Markdown' : 'Org mode';
   $('#breadcrumb').textContent = doc.path;
   $('#file-info').title = `Reveal ${doc.path}`;
-  $('#document-title').textContent = doc.name;
   $('#source').textContent = doc.source;
   $('#preview-tab').disabled = true;
   $('#status').textContent = 'Rendering…';
@@ -212,6 +218,7 @@ async function acceptDocument(doc) {
   try {
     const parsed = await renderer.render(doc);
     if (revision !== renderRevision) return;
+    const visibleTop = $('#reader').scrollTop;
     currentParsed = parsed;
     $('#preview-tab').disabled = false;
     $('#document-title').textContent = parsed.title;
@@ -246,7 +253,10 @@ async function acceptDocument(doc) {
     if (interaction === interactionRevision) {
       $('#reader').scrollTop = top;
       finder.restore(view.search);
-    } else if ($('#search').value) finder.search($('#search').value, true, true, false);
+    } else {
+      $('#reader').scrollTop = visibleTop;
+      if ($('#search').value) finder.search($('#search').value, true, true, false);
+    }
     observer?.disconnect();
     observer = new IntersectionObserver((entries) => {
       const heading = entries.find((entry) => entry.isIntersecting);
@@ -304,6 +314,7 @@ $('#content').addEventListener('click', (event) => {
   const link = event.target.closest('a');
   if (!link) return;
   event.preventDefault();
+  if (!currentParsed) return;
   if (link.dataset.documentLink !== undefined) {
     const reference = currentParsed.links[Number(link.dataset.documentLink)];
     if (reference) run(api.openLink(current.id, current.revision, reference));

@@ -21,7 +21,7 @@ export function createDocumentRenderer({ createWorker = () => new Worker(new URL
         worker.onmessage = ({ data }) => data.error ? finish(new Error(data.error)) : finish(null, data.preview);
         worker.onerror = (event) => { event.preventDefault?.(); finish(new Error(event.message || 'Document processing stopped')); };
         worker.onmessageerror = () => finish(new Error('Document processing returned invalid data'));
-        timer = setTimeout(() => finish(new Error('Document exceeded the 5-second processing limit')), timeoutMs);
+        timer = setTimeout(() => finish(new Error('Document exceeded the 15-second processing limit')), timeoutMs);
         worker.postMessage({ source: doc.source, name: doc.name, format: doc.format });
       } catch (error) { finish(error); }
     });

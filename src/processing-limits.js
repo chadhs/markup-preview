@@ -2,7 +2,7 @@ export const MAX_TREE_NODES = 250000;
 export const MAX_TREE_DEPTH = 128;
 export const MAX_PREVIEW_CHARACTERS = 32 * 1024 * 1024;
 export const MAX_METADATA_CHARACTERS = 128 * 1024;
-export const PROCESSING_TIMEOUT_MS = 5000;
+export const PROCESSING_TIMEOUT_MS = 15000;
 
 export function visitTree(root, callback) {
   const stack = [{ node: root, depth: 0 }];

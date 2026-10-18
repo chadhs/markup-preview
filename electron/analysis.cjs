@@ -3,7 +3,7 @@ const path = require('node:path');
 
 // Resource authorization uses an independent analysis of main-owned source.
 // A worker thread keeps parsing off the main event loop; it is not an OS sandbox.
-function createAnalyzer({ workerPath = path.join(__dirname, 'analysis-worker.cjs'), timeoutMs = 5000 } = {}) {
+function createAnalyzer({ workerPath = path.join(__dirname, 'analysis-worker.cjs'), timeoutMs = 15000 } = {}) {
   const jobs = new Set();
   function analyze(doc) {
     return new Promise((resolve, reject) => {
@@ -22,7 +22,7 @@ function createAnalyzer({ workerPath = path.join(__dirname, 'analysis-worker.cjs
         worker.once('message', (result) => result.error ? finish(new Error(result.error)) : finish(null, result.index));
         worker.once('error', () => finish(new Error('Document analysis stopped or exceeded its memory limit')));
         worker.once('exit', () => finish(new Error('Document analysis stopped')));
-        timer = setTimeout(() => finish(new Error('Document analysis exceeded the 5-second processing limit')), timeoutMs);
+        timer = setTimeout(() => finish(new Error('Document analysis exceeded the 15-second processing limit')), timeoutMs);
       } catch (error) { finish(error); }
     });
   }

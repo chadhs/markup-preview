@@ -81,6 +81,8 @@ try {
   await window.locator('#preview-tab').click();
   await writeFile(file, longSource + 'External save with search open.\n');
   await expect(window.locator('#source')).toContainText('External save with search open.');
+  // Raw source is available before the asynchronous preview has completed.
+  await expect(window.locator('#content')).toContainText('External save with search open.');
   expect(await window.locator('#reader').evaluate((reader) => reader.scrollTop)).toBe(1000);
   await expect(window.locator('#search-count')).toHaveText('2 / 2');
   await window.locator('#search').press('Shift+Enter');
@@ -147,6 +149,7 @@ try {
   await window.locator('#close-search').click();
   await writeFile(large, largeSource.replace('Last sentence.', 'Saved large document.'));
   await expect(window.locator('#source')).toContainText('Saved large document.', { timeout: 30000 });
+  await expect(window.locator('#content')).toContainText('Saved large document.', { timeout: 30000 });
   await expect(window.locator('#error')).toBeHidden();
   // A second CLI invocation must report bad input instead of ignoring it.
   await app.evaluate(({ app }) => {

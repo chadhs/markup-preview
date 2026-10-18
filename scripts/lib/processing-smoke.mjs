@@ -5,7 +5,8 @@ import { createImageFixture, fixturePng } from './image-fixture.mjs';
 
 export async function checkProcessing(window, directory, previousFile) {
   const file = path.join(directory, 'worker.md');
-  await writeFile(file, '# Worker document\n\nSearch while processing.');
+  const source = '# Worker document\n\nSearch while processing.\n\n' + 'A paragraph for scrolling.\n\n'.repeat(200);
+  await writeFile(file, source);
   // Delay delivery to a real worker so interaction/cancellation tests do not
   // depend on machine speed. No production test hooks are needed.
   await window.evaluate(() => {
@@ -27,13 +28,28 @@ export async function checkProcessing(window, directory, previousFile) {
     await expect(window.locator('#source')).toBeVisible();
     await expect(window.locator('#search')).toHaveValue('Search');
     await expect(window.locator('#search-count')).toHaveText('1 / 1');
-    await writeFile(file, '# Replacement pending\n\nUpdated source.');
+    await window.locator('#close-search').click();
+    await window.locator('#preview-tab').click();
+    await window.locator('#reader').evaluate((reader) => { reader.scrollTop = 1000; });
+    await writeFile(file, source + 'Saved while reading.');
     await expect.poll(() => window.evaluate(() => window.processingWorkers)).toBe(2);
+    await expect(window.locator('#preview-tab')).toBeDisabled();
+    await expect(window.locator('#content')).toContainText('Search while processing.');
+    expect(await window.locator('#reader').evaluate((reader) => reader.scrollTop)).toBe(1000);
+    // Scrolling during the pending save must also survive the new HTML mount.
+    await window.locator('#reader').evaluate((reader) => {
+      reader.dispatchEvent(new WheelEvent('wheel', { bubbles: true }));
+      reader.scrollTop = 1500;
+    });
+    await expect(window.locator('#content')).toContainText('Saved while reading.');
+    expect(await window.locator('#reader').evaluate((reader) => reader.scrollTop)).toBe(1500);
+    await writeFile(file, '# Replacement pending\n\nUpdated source.');
+    await expect.poll(() => window.evaluate(() => window.processingWorkers)).toBe(3);
     await window.evaluate((file) => window.markupPreview.openPath(file), previousFile);
     await expect(window.locator('#breadcrumb')).toHaveText(previousFile);
     await expect(window.locator('#preview-tab')).toBeEnabled();
     await expect(window.locator('#error')).toBeHidden();
-    expect(await window.evaluate(() => window.terminatedWorkers)).toBeGreaterThanOrEqual(3);
+    expect(await window.evaluate(() => window.terminatedWorkers)).toBeGreaterThanOrEqual(4);
     await window.evaluate(async (file) => {
       const state = await window.markupPreview.initial();
       await window.markupPreview.close(state.tabs.find((tab) => tab.path === file).id);

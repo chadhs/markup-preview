@@ -8,7 +8,4 @@ export function renderDocument(doc) {
   if (format === 'markdown') return renderMarkdown(doc.source, title);
   throw new Error('Unsupported document format.');
 }
-export function resolveAnchor(parsed, target) {
-  if (target.kind === 'heading') return parsed.outline.find((heading) => heading.label === target.value)?.id;
-  return parsed.anchors?.[target.value] ?? parsed.outline.find((heading) => heading.id === target.value)?.id;
-}
+export { resolveAnchor } from './anchors.js';

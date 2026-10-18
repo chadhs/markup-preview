@@ -1,5 +1,6 @@
 import { parseDocument } from 'yaml';
 import { parse as parseToml } from 'smol-toml';
+import { MAX_METADATA_CHARACTERS } from './processing-limits.js';
 
 export function normalizeMetadata(values = {}) {
   if (!values || typeof values !== 'object' || Array.isArray(values)) values = {};
@@ -14,6 +15,7 @@ export function normalizeMetadata(values = {}) {
 export function markdownMetadata(tree) {
   const node = tree.children[0];
   if (!['yaml', 'toml'].includes(node?.type)) return normalizeMetadata();
+  if (node.value.length > MAX_METADATA_CHARACTERS) return { ...normalizeMetadata(), warning: 'Front matter exceeds 128 Ki characters. The original metadata is shown below.' };
   try {
     let values;
     if (node.type === 'toml') values = parseToml(node.value);

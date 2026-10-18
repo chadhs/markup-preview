@@ -8,7 +8,7 @@ const { assertLocalPath } = require('./local-paths.cjs');
 const { configureGraphics } = require('./graphics.cjs');
 const { titlebarOptions, updateTitlebar } = require('./titlebar.cjs');
 const { DOCUMENT_EXTENSIONS } = require('./formats.cjs');
-const { documentResource } = require('./resource-index.cjs');
+const { documentResource, cancelAnalysis } = require('./resource-index.cjs');
 const { openDocumentLink } = require('./links.cjs');
 app.setName('Markup Preview');
 if (process.platform === 'win32') app.setAppUserModelId('com.chadhs.markup-preview');
@@ -26,7 +26,7 @@ let diagramEpoch = 0;
 const sessions = createSessions({
   changed: (state) => {
     const identity = `${state.activeId}:${state.tabs.find((tab) => tab.id === state.activeId)?.revision}`;
-    if (identity !== diagramDocument) { diagrams.cancel(); diagramDocument = identity; diagramEpoch++; }
+    if (identity !== diagramDocument) { diagrams.cancel(); cancelAnalysis(); diagramDocument = identity; diagramEpoch++; }
     win?.setTitle(sessions.active() ? `${sessions.active().name} — Markup Preview` : 'Markup Preview');
     win?.webContents.send('session:changed', state);
   },
@@ -70,7 +70,7 @@ function createWindow() {
       if (sessions.active()) sessions.close(sessions.active().id);
     }
   });
-  win.on('closed', () => { sessions.dispose(); diagrams.cancel(); win = undefined; });
+  win.on('closed', () => { sessions.dispose(); diagrams.cancel(); cancelAnalysis(); win = undefined; });
   win.loadFile(path.join(__dirname, '../dist/index.html'));
 }
 // Chromium can reorder or omit second-instance argv on Windows. Pass the
@@ -143,6 +143,6 @@ else {
   app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
   app.on('before-quit', () => {
     if (app.isReady()) session.defaultSession.flushStorageData();
-    sessions.dispose(); diagrams.cancel();
+    sessions.dispose(); diagrams.cancel(); cancelAnalysis();
   });
 }

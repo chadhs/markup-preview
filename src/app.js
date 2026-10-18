@@ -1,6 +1,7 @@
 import DOMPurify from 'dompurify';
 import { version as appVersion } from '../package.json';
-import { renderDocument, resolveAnchor } from './documents.js';
+import { resolveAnchor } from './anchors.js';
+import { createDocumentRenderer } from './renderer.js';
 import './style.css';
 import { createSearch } from './search.js';
 import { initializeAppearance } from './appearance.js';
@@ -14,6 +15,7 @@ initializeAppearance();
 
 const $ = (selector) => document.querySelector(selector);
 const api = window.markupPreview;
+const renderer = createDocumentRenderer();
 $('.version').textContent = appVersion;
 let current;
 let currentParsed;
@@ -42,7 +44,10 @@ const newView = () => ({ sourceMode: false, scroll: { preview: 0, source: 0 }, s
 function saveView() {
   if (!current) return;
   scrollPositions[sourceMode ? 'source' : 'preview'] = $('#reader').scrollTop;
-  views.set(current.id, { sourceMode, scroll: { ...scrollPositions }, search: finder.snapshot(), searchOpen: !$('#search-bar').hidden });
+  const search = finder.snapshot(), previous = views.get(current.id)?.search;
+  if (!currentParsed && previous?.query === $('#search').value) search.active = previous.active;
+  search.query = $('#search').value;
+  views.set(current.id, { sourceMode, scroll: { ...scrollPositions }, search, searchOpen: !$('#search-bar').hidden });
 }
 function selectTab(id) { run(api.activate(id)); }
 function cycleTab(direction) {
@@ -107,7 +112,7 @@ async function acceptSession(state) {
   if (Object.hasOwn(state, 'document')) {
     if (state.document) navigationError = await acceptDocument(state.document);
     else {
-      saveView(); current = undefined; currentParsed = undefined; renderError = ''; renderRevision++; observer?.disconnect(); finder.clear();
+      saveView(); renderer.cancel(); current = undefined; currentParsed = undefined; renderError = ''; renderRevision++; observer?.disconnect(); finder.clear();
       activeDiagrams = [];
       $('#content').replaceChildren(); $('#source').textContent = '';
       $('#empty-state').hidden = false; $('#document').hidden = true; $('#source').hidden = true;
@@ -168,6 +173,7 @@ async function acceptDocument(doc) {
   const view = views.get(doc.id) ?? newView();
   const changedFile = current?.id !== doc.id;
   const revision = ++renderRevision;
+  renderer.cancel();
   const top = view.scroll[view.sourceMode ? 'source' : 'preview'];
   const interaction = interactionRevision;
   // Source and identity must survive even when preview generation fails.
@@ -204,7 +210,8 @@ async function acceptDocument(doc) {
   await new Promise(requestAnimationFrame);
   if (revision !== renderRevision) return;
   try {
-    const parsed = renderDocument(doc);
+    const parsed = await renderer.render(doc);
+    if (revision !== renderRevision) return;
     currentParsed = parsed;
     $('#preview-tab').disabled = false;
     $('#document-title').textContent = parsed.title;
@@ -236,8 +243,10 @@ async function acceptDocument(doc) {
     const dot = document.createElement('span');
     dot.className = 'live-dot';
     $('#status').append(dot, document.createTextNode(`Live · updated ${new Date(doc.modified).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`));
-    $('#reader').scrollTop = top;
-    finder.restore(view.search);
+    if (interaction === interactionRevision) {
+      $('#reader').scrollTop = top;
+      finder.restore(view.search);
+    } else if ($('#search').value) finder.search($('#search').value, true, true, false);
     observer?.disconnect();
     observer = new IntersectionObserver((entries) => {
       const heading = entries.find((entry) => entry.isIntersecting);
@@ -257,6 +266,7 @@ async function acceptDocument(doc) {
     void loadImages($('#content'), parsed.images, doc.path, (file, reference) => api.image(file, reference, doc.revision), () => revision === renderRevision, layoutChanged);
     return applyNavigation();
   } catch (reason) {
+    if (revision !== renderRevision) return;
     currentParsed = undefined; activeDiagrams = [];
     $('#content').replaceChildren(); $('#outline').replaceChildren();
     $('#preview-tab').disabled = true;

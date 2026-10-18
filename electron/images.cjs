@@ -29,7 +29,7 @@ function remoteUrl(target, base) {
   return url;
 }
 
-async function remoteBytes(url, remaining, fetchImage, signal) {
+async function remoteBytes(url, available, consume, fetchImage, signal) {
   for (let redirects = 0; ; redirects++) {
     signal.throwIfAborted();
     const response = await fetchImage(url.href, { redirect: 'manual', credentials: 'omit', referrerPolicy: 'no-referrer', signal });
@@ -46,7 +46,7 @@ async function remoteBytes(url, remaining, fetchImage, signal) {
       throw new Error(`Remote image returned HTTP ${response.status}.`);
     }
     const length = Number(response.headers.get('content-length'));
-    if (length > MAX_IMAGE_BYTES || length > remaining) {
+    if (length > MAX_IMAGE_BYTES || length > available()) {
       await response.body?.cancel();
       throw new Error(length > MAX_IMAGE_BYTES ? 'Image exceeds 8 MiB.' : 'Image limit reached for this document.');
     }
@@ -61,7 +61,7 @@ async function remoteBytes(url, remaining, fetchImage, signal) {
         if (done) break;
         total += value.byteLength;
         if (total > MAX_IMAGE_BYTES) throw new Error('Image exceeds 8 MiB.');
-        if (total > remaining) throw new Error('Image limit reached for this document.');
+        consume(value.byteLength);
         chunks.push(Buffer.from(value));
       }
       return Buffer.concat(chunks, total);
@@ -75,7 +75,7 @@ async function remoteBytes(url, remaining, fetchImage, signal) {
 // Bind reads to actual links in one document revision, never renderer-supplied paths.
 function createImageReader(doc, { fetch: fetchImage = globalThis.fetch, timeoutMs = IMAGE_TIMEOUT_MS } = {}) {
   let remaining = MAX_DOCUMENT_IMAGE_BYTES;
-  let queue = Promise.resolve();
+  let localQueue = Promise.resolve(), remoteQueue = Promise.resolve();
   const cache = new Map();
   const lifecycle = new AbortController();
   const current = () => { if (lifecycle.signal.aborted) throw new Error('The document changed.'); };
@@ -93,50 +93,60 @@ function createImageReader(doc, { fetch: fetchImage = globalThis.fetch, timeoutM
       const key = url ? url.href : file;
       if (cache.has(key)) return await cache.get(key);
       if (cache.size >= MAX_IMAGE_LINKS) throw new Error('Image limit reached for this document.');
-      const loading = queue.then(async () => {
+      const loading = (url ? remoteQueue : localQueue).then(async () => {
         current();
-        if (url) {
-          const controller = new AbortController();
-          const signal = AbortSignal.any([lifecycle.signal, controller.signal]);
-          const timer = setTimeout(() => controller.abort(new Error('Remote image timed out.')), timeoutMs);
-          try {
-            const content = await remoteBytes(url, remaining, fetchImage, signal);
-            current();
-            signal.throwIfAborted();
-            const mime = imageMime(null, content);
-            remaining -= content.length;
-            return { dataUrl: `data:${mime};base64,${content.toString('base64')}` };
-          } catch (error) {
-            current();
-            if (controller.signal.aborted) throw new Error('Remote image timed out.');
-            throw new Error(error.message === 'fetch failed' ? 'Remote image could not be downloaded.' : error.message);
-          } finally { clearTimeout(timer); controller.abort(); }
-        }
-        const handle = await fs.open(file, constants.O_RDONLY | constants.O_NONBLOCK);
+        // Charge bytes before retaining them, across both concurrent queues.
+        let held = 0, retained = false;
+        const consume = (bytes) => {
+          if (bytes > remaining) throw new Error('Image limit reached for this document.');
+          remaining -= bytes; held += bytes;
+        };
         try {
-          const stat = await handle.stat();
-          if (!stat.isFile()) throw new Error('The image path is not a file.');
-          if (stat.size > MAX_IMAGE_BYTES) throw new Error('Image exceeds 8 MiB.');
-          if (stat.size > remaining) throw new Error('Image limit reached for this document.');
-          // Read one extra byte to detect growth without an unbounded readFile.
-          const bytes = Buffer.alloc(stat.size + 1);
-          let total = 0;
-          while (total < bytes.length) {
-            current();
-            const { bytesRead } = await handle.read(bytes, total, bytes.length - total, null);
-            if (!bytesRead) break;
-            total += bytesRead;
+          if (url) {
+            const controller = new AbortController();
+            const signal = AbortSignal.any([lifecycle.signal, controller.signal]);
+            const timer = setTimeout(() => controller.abort(new Error('Remote image timed out.')), timeoutMs);
+            try {
+              const content = await remoteBytes(url, () => remaining, consume, fetchImage, signal);
+              current();
+              signal.throwIfAborted();
+              const mime = imageMime(null, content);
+              retained = true;
+              return { dataUrl: `data:${mime};base64,${content.toString('base64')}` };
+            } catch (error) {
+              current();
+              if (controller.signal.aborted) throw new Error('Remote image timed out.');
+              throw new Error(error.message === 'fetch failed' ? 'Remote image could not be downloaded.' : error.message);
+            } finally { clearTimeout(timer); controller.abort(); }
           }
-          if (total > stat.size) throw new Error('The image changed while loading. Reopen the document to retry.');
-          const content = bytes.subarray(0, total);
-          current();
-          const mime = imageMime(file, content);
-          remaining -= total;
-          return { dataUrl: `data:${mime};base64,${content.toString('base64')}` };
-        } finally { await handle.close(); }
+          const handle = await fs.open(file, constants.O_RDONLY | constants.O_NONBLOCK);
+          try {
+            const stat = await handle.stat();
+            if (!stat.isFile()) throw new Error('The image path is not a file.');
+            if (stat.size > MAX_IMAGE_BYTES) throw new Error('Image exceeds 8 MiB.');
+            if (stat.size > remaining) throw new Error('Image limit reached for this document.');
+            consume(stat.size);
+            // Read one extra byte to detect growth without an unbounded readFile.
+            const bytes = Buffer.alloc(stat.size + 1);
+            let total = 0;
+            while (total < bytes.length) {
+              current();
+              const { bytesRead } = await handle.read(bytes, total, bytes.length - total, null);
+              if (!bytesRead) break;
+              total += bytesRead;
+            }
+            if (total > stat.size) throw new Error('The image changed while loading. Reopen the document to retry.');
+            const content = bytes.subarray(0, total);
+            current();
+            const mime = imageMime(file, content);
+            remaining += held - total; held = total;
+            retained = true;
+            return { dataUrl: `data:${mime};base64,${content.toString('base64')}` };
+          } finally { await handle.close(); }
+        } finally { if (!retained) remaining += held; }
       }).catch((error) => ({ error: error.code === 'ENOENT' ? 'Image not found.' : error.code === 'EACCES' ? 'Image is not readable.' : error.message }));
       cache.set(key, loading);
-      queue = loading;
+      if (url) remoteQueue = loading; else localQueue = loading;
       return await loading;
     } catch (error) {
       return { error: error.message };

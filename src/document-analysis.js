@@ -8,6 +8,7 @@ import { frontmatterFromMarkdown } from 'mdast-util-frontmatter';
 import { orgImageTarget } from '../electron/org-image-links.mjs';
 import { orgMetadata, markdownMetadata } from './metadata.js';
 import pathSyntax from '../electron/path-syntax.cjs';
+import { visitTree } from './processing-limits.js';
 const { isDriveAbsolute, hasScheme } = pathSyntax;
 const { MAX_IMAGE_LINKS } = formats;
 
@@ -45,14 +46,12 @@ function parseOrg(source) {
     }
     return { ...point, offset: point.offset + low };
   }
-  function restore(node) {
+  visitTree(tree, (node) => {
     // Nodes may share position objects; replace rather than mutate them.
     if (node.position) node.position = {
       start: originalPoint(node.position.start), end: originalPoint(node.position.end),
     };
-    for (const child of node.children || []) restore(child);
-  }
-  restore(tree);
+  });
   return tree;
 }
 
@@ -64,7 +63,7 @@ export function analyzeDocument({ source, format }) {
     : fromMarkdown(source, { extensions: [gfm(), frontmatter(['yaml', 'toml'])], mdastExtensions: [gfmFromMarkdown(), frontmatterFromMarkdown(['yaml', 'toml'])] });
   const images = [], diagrams = [], links = [];
   const definitions = new Map(), nodes = new WeakMap();
-  function visit(node, callback) { callback(node); for (const child of node.children || []) visit(child, callback); }
+  const visit = visitTree;
   visit(tree, (node) => {
     if (node.type === 'definition' && !definitions.has(node.identifier)) definitions.set(node.identifier, node);
   });

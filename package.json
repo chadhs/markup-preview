@@ -175,7 +175,7 @@
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@resvg/resvg-js": "^2.6.2",
-    "electron": "^44.9.0",
+    "electron": "^45.0.0",
     "electron-builder": "^26.15.3",
     "patch-package": "8.0.1",
     "vite": "^8.2.2"
